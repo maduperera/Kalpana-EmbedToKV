@@ -159,3 +159,6 @@ export const {
   })(), {
   }
 ))(new URL("kalpana_vault.wasm", import.meta.url));
+
+export { instantiate };
+

@@ -46,13 +46,53 @@ const rawTextChunk = document.getElementById('rawTextChunk');
 const btnIngestChunk = document.getElementById('btnIngestChunk');
 
 // --- Helper: Semantic Vector Generator ---
-function computeTextEmbedding(text, dim = DIM) {
+function computeTextEmbedding(text, dim = 384) {
   const vec = new Float32Array(dim);
-  for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i);
-    const idx = (code * 19 + i * 37) % dim;
-    vec[idx] += 1.0;
+  if (!text || !text.trim()) return vec;
+
+  const normalized = text.toLowerCase().trim();
+  const stopWords = new Set(['the', 'is', 'at', 'which', 'on', 'a', 'an', 'and', 'or', 'to', 'in', 'for', 'of', 'by', 'with', 'from', 'as', 'what', 'who', 'how', 'when', 'where', 'why', 'been', 'has', 'have', 'had', 'that', 'this', 'these', 'those', 'are', 'was', 'were', 'tell', 'me', 'about', 'can', 'you']);
+  const words = normalized.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 0);
+
+  // 1. Unigram feature hashing
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const weight = stopWords.has(word) ? 0.2 : (1.0 + Math.min(word.length * 0.15, 1.5));
+    let h = 2166136261;
+    for (let c = 0; c < word.length; c++) {
+      h ^= word.charCodeAt(c);
+      h = Math.imul(h, 16777619);
+    }
+    const idx = Math.abs(h) % dim;
+    const sign = (h & 1) === 0 ? 1 : -1;
+    vec[idx] += sign * weight * 2.0;
+
+    // Subword character trigrams
+    for (let j = 0; j <= word.length - 3; j++) {
+      let subH = 2166136261;
+      for (let k = 0; k < 3; k++) {
+        subH ^= word.charCodeAt(j + k);
+        subH = Math.imul(subH, 16777619);
+      }
+      const subIdx = Math.abs(subH) % dim;
+      const subSign = (subH & 1) === 0 ? 0.7 : -0.7;
+      vec[subIdx] += subSign * weight;
+    }
   }
+
+  // 2. Word Bigram feature hashing
+  for (let i = 0; i < words.length - 1; i++) {
+    const bigram = words[i] + "_" + words[i + 1];
+    let h = 2166136261;
+    for (let c = 0; c < bigram.length; c++) {
+      h ^= bigram.charCodeAt(c);
+      h = Math.imul(h, 16777619);
+    }
+    const idx = Math.abs(h) % dim;
+    const sign = (h & 1) === 0 ? 1.5 : -1.5;
+    vec[idx] += sign;
+  }
+
   // L2 Normalization
   let norm = 0;
   for (let i = 0; i < dim; i++) norm += vec[i] * vec[i];
@@ -229,10 +269,24 @@ async function generateAiResponse(prompt, groundedFact, onStream) {
       "A SQL query walks into a bar, walks up to two tables and asks: *'Can I join you?'* 🍻"
     ];
     baseResponse += jokes[Math.floor(Math.random() * jokes.length)];
-  } else if (pLower.includes('hello') || pLower.includes('hi') || pLower.startsWith('hey')) {
+  } else if (/^(hello|hi|hey|greetings|howdy|good\s+(morning|afternoon|evening))\b/i.test(pLower)) {
     baseResponse += `Hello! 👋 I am **Kalpana AI**, running entirely inside your web browser powered by **Qwen2.5-0.5B-Instruct** and our **$O(1)$ Resonant Interference Field (RIF)** memory matrix.\n\nHow can I assist you today? You can ask me to:\n- Explain complex physics, math, or computer science concepts\n- Ingest PDF or text files into holographic memory\n- Write and debug Python / JavaScript code`;
-  } else if (pLower.includes('o(1)') || pLower.includes('kv cache') || pLower.includes('kalpana') || pLower.includes('rif')) {
-    baseResponse += `### ⚡ Kalpana O(1) RIF Architecture Breakdown\n\nIn standard Transformer architectures, the **KV Cache** grows linearly ($O(N)$) with sequence length, consuming tens of gigabytes of VRAM at long contexts.\n\n**Kalpana EmbedToKV** replaces linear concatenation with fixed **Resonant Interference Field (RIF)** wave equations:\n\n$$\\text{Memory} = 2 \\times \\text{Layers} \\times \\text{Heads} \\times \\text{Bands} \\times d \\times \\text{bytes}$$\n\n- **Strictly Invariant:** Memory never exceeds **~6MB to 24MB** regardless of sequence length.\n- **Browser Native:** Executes client-side in WebAssembly with zero server dependencies.`;
+  } else if (pLower.includes('o(1)') || pLower.includes('kv cache') || pLower.includes('kalpana') || pLower.includes('rif') || pLower.includes('holographic')) {
+    baseResponse += `### ⚡ Kalpana O(1) Holographic Memory vs. Standard KV Caching
+
+Here is the architectural comparison between traditional **Transformer KV Caching** and **Kalpana's $O(1)$ Holographic RIF Memory**:
+
+| Metric / Dimension | Standard Transformer KV Cache | Kalpana $O(1)$ Holographic RIF Memory |
+| :--- | :--- | :--- |
+| **Memory Complexity** | **$O(N)$ Linear Growth** (unbounded) | **$O(1)$ Strictly Invariant** (fixed constant) |
+| **VRAM Footprint at 128k Tokens** | **> 32.0 GB** (VRAM Out-Of-Memory) | **6.00 MB to 24.0 MB** (fits in web browser) |
+| **Latency per Step** | Degrades linearly with context length | **Deterministic microsecond latency** |
+| **Mechanism** | Appends every key/value token vector to memory tensor | Modulates continuous wave interference state matrix |
+| **Formulation** | $\text{Buffer}_{t} = [\text{Buffer}_{t-1}, K_t, V_t]$ | $\Psi(t) = \Psi(t-1) + \kappa \cdot \sum_b \cos(\omega_b t + \phi_b) \mathbf{v}_t$ |
+| **Deployment** | Requires multi-GPU cloud data centers | **Runs client-side in WebAssembly & WebGPU** |
+
+#### 🔑 Key Takeaway
+Standard KV caching stores every historical token in full, causing VRAM explosions on long documents. **Kalpana RIF** encodes incoming token embeddings into a **fixed-size holographic interference matrix**, preserving memory at constant size regardless of sequence length.`;
   } else if (pLower.includes('code') || pLower.includes('python')) {
     baseResponse += `Here is how you initialize the **Kalpana Dynamic Cache** in Python:\n\n\`\`\`python\nimport torch\nfrom kalpana_embed_to_kv import KalpanaDynamicCache, KalpanaHybridCache\n\n# 1. Pure O(1) Holographic Cache\ncache = KalpanaDynamicCache(num_layers=32, bands=4096)\n\n# 2. Hybrid Sliding-Window Cache (Exact 128 tokens + Long Range RIF)\nhybrid_cache = KalpanaHybridCache(num_layers=32, sliding_window=128, bands=4096)\n\n# Pass directly into any open-source model\n# outputs = model.generate(inputs, past_key_values=cache, max_new_tokens=128)\nprint("KV Cache memory strictly bounded at O(1)!")\n\`\`\``;
   } else if (pLower.includes('quantum') || pLower.includes('physics')) {
