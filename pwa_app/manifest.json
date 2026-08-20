@@ -1,0 +1,24 @@
+{
+  "name": "Kalpana Chat — In-Browser O(1) AI",
+  "short_name": "Kalpana AI",
+  "description": "ChatGPT-style local in-browser AI with Qwen2.5-0.5B and O(1) Holographic Memory",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0a0c14",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kalpana AI — In-Browser O(1) LLM Chat</title>
+  <meta name="description" content="ChatGPT-style private in-browser AI with Qwen2.5-0.5B-Instruct and O(1) Holographic Memory">
+  <meta name="theme-color" content="#0a0c14">
+
+  <!-- PWA Manifest & Icons -->
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./assets/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="./assets/logo.svg">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-badge">K</div>
+        <div>
+          <div class="logo-title">Kalpana AI</div>
+          <div class="logo-tag">O(1) RIF Edge Engine</div>
+        </div>
+      </div>
+
+      <button class="btn-new-chat" id="btnNewChat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        New Conversation
+      </button>
+
+      <div class="chat-history" id="chatHistoryList">
+        <div class="history-item active" data-id="default">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          General Chat
+        </div>
+      </div>
+
+      <!-- Live Memory Widget -->
+      <div class="memory-widget">
+        <div class="widget-title">
+          <span>⚡ RIF Memory Matrix</span>
+          <span style="color: var(--cyan);">O(1) Active</span>
+        </div>
+        <div class="widget-row">
+          <span>Holographic Bands:</span>
+          <span class="widget-val" id="hudBands">2048</span>
+        </div>
+        <div class="widget-row">
+          <span>Ingested Chunks:</span>
+          <span class="widget-val" id="hudChunks">0</span>
+        </div>
+        <div class="widget-row">
+          <span>VRAM / Memory:</span>
+          <span class="widget-val" id="hudMem" style="color: var(--emerald);">6.00 MB (Strict O(1))</span>
+        </div>
+      </div>
+
+      <!-- Sidebar Action Buttons -->
+      <div class="sidebar-actions">
+        <button class="btn-action" id="btnOpenDocs">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Ingest Knowledge File
+        </button>
+        <button class="btn-action" id="btnInstallPwa" style="display: none;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Install PWA App
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Chat Content -->
+    <main class="main-chat">
+      <!-- Top Bar -->
+      <header class="chat-topbar">
+        <div style="display: flex; align-items: center; gap: 0.8rem;">
+          <button class="btn-mobile-menu" id="btnMobileMenu">☰</button>
+          <div class="model-pill">
+            <div class="pulse-dot"></div>
+            <span id="modelStatusLabel">Qwen2.5-0.5B-Instruct + Kalpana RIF</span>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="tool-btn" id="btnClearChat" title="Clear Chat">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Message History Container -->
+      <div class="messages-container" id="messagesContainer">
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-logo">K</div>
+          <div class="empty-title">What would you like to explore?</div>
+          <div class="empty-subtitle">Private, 100% in-browser AI with $O(1)$ holographic memory. Your data never leaves your device.</div>
+
+          <div class="suggestions-grid">
+            <div class="suggestion-card" data-prompt="Explain the difference between O(1) holographic memory and standard KV caching.">
+              ⚡ <strong>O(1) vs Linear KV Cache</strong>
+              <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem;">Compare memory scaling & architecture.</div>
+            </div>
+            <div class="suggestion-card" data-prompt="Write a modern Python script demonstrating sentence embedding resonance.">
+              🐍 <strong>Python Vector Resonance</strong>
+              <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem;">Generate clean code for holographic sweep.</div>
+            </div>
+            <div class="suggestion-card" data-prompt="How does quantum entanglement allow correlated states across vast distances?">
+              🌌 <strong>Quantum Entanglement</strong>
+              <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem;">Explore physics and science concepts.</div>
+            </div>
+            <div class="suggestion-card" data-prompt="Draft an executive summary for a high-performance edge AI application.">
+              📊 <strong>Executive Pitch Draft</strong>
+              <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem;">Create a concise business narrative.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="input-area-wrap">
+        <div class="input-box">
+          <textarea id="userInput" placeholder="Ask anything, query knowledge, or dictate via microphone..." rows="1"></textarea>
+
+          <div class="input-toolbar">
+            <div class="tool-buttons">
+              <button class="tool-btn" id="btnAttachDoc" title="Upload Document / Text Chunk">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </button>
+              <button class="tool-btn" id="btnVoiceInput" title="Voice Dictation">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              </button>
+            </div>
+
+            <button class="btn-send" id="btnSend" disabled>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="input-disclaimer">
+          Kalpana AI executes client-side via WebAssembly & WebGPU. Zero server telemetry.
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Document Ingestion Modal -->
+  <div class="modal-overlay" id="docModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">📥 Ingest Knowledge Document into O(1) RIF</div>
+        <button class="btn-close" id="btnCloseModal">&times;</button>
+      </div>
+
+      <div class="drop-zone" id="dropZone">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" style="margin-bottom: 0.75rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div style="font-weight: 600; margin-bottom: 0.25rem;">Drag & drop text or PDF files here</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">or click to browse files</div>
+        <input type="file" id="fileInput" accept=".txt,.md,.json" style="display: none;">
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <label style="font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">Or paste raw text / knowledge chunk:</label>
+        <textarea id="rawTextChunk" style="width: 100%; height: 90px; background: rgba(10,12,20,0.8); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.85rem; padding: 0.6rem;" placeholder="Paste text here..."></textarea>
+      </div>
+
+      <button class="btn-new-chat" id="btnIngestChunk" style="width: 100%; margin-top: 1rem;">
+        Ingest into Holographic Memory Matrix
+      </button>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
