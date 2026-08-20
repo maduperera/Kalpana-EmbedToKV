@@ -1,24 +1,7 @@
-const CACHE_NAME = 'kalpana-pwa-v1';
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './style.css',
-  './app.js',
-  './kalpana_vault_embed.js',
-  './kalpana_vault.js',
-  './kalpana_vault.wasm',
-  './manifest.json',
-  './assets/logo.svg',
-  './assets/icon-192.png',
-  './assets/icon-512.png'
-];
+const CACHE_NAME = 'kalpana-pwa-v5-live';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
-  );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -27,6 +10,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('[PWA SW] Purging stale cache:', key);
             return caches.delete(key);
           }
         })
@@ -36,15 +20,30 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Pass model downloads and CDN requests directly to browser network / cache
-  if (event.request.url.includes('huggingface.co') || event.request.url.includes('cdn.jsdelivr.net')) {
+  // Pass dynamic and API requests straight to network
+  if (
+    event.request.url.includes('wikipedia.org') ||
+    event.request.url.includes('huggingface.co') ||
+    event.request.url.includes('cdn.jsdelivr.net') ||
+    event.request.url.includes('/api/')
+  ) {
     event.respondWith(fetch(event.request));
     return;
   }
 
+  // Network-First with Cache fallback for app assets
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request);
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
+

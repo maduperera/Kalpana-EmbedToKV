@@ -119,8 +119,11 @@ async function initApp() {
 
   // 2. Register Service Worker for PWA
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('[PWA] Service Worker registered'))
+    navigator.serviceWorker.register('./sw.js?v=5.0')
+      .then((reg) => {
+        reg.update();
+        console.log('[PWA] Service Worker v5 registered and checked for updates');
+      })
       .catch((e) => console.log('[PWA] SW registration failed:', e));
   }
 
@@ -244,7 +247,7 @@ async function handleUserSubmit() {
 async function fetchDynamicKnowledge(query) {
   try {
     const clean = query
-      .replace(/^(who is|who was|what is|what was|what are|explain|tell me about|how does|how do|describe)\s+/i, '')
+      .replace(/^(who is|who was|what is|what was|what are|explain|tell me about|how does|how do|describe|why is the|why is|why does|why the|why)\s+/i, '')
       .replace(/\?+$/, '')
       .trim();
 
@@ -338,14 +341,25 @@ Standard KV caching stores every historical token in full, causing VRAM explosio
   // 5. Code / Python
   else if (pLower.includes('code') || pLower.includes('python')) {
     baseResponse += `Here is how you initialize the **Kalpana Dynamic Cache** in Python:\n\n\`\`\`python\nimport torch\nfrom kalpana_embed_to_kv import KalpanaDynamicCache, KalpanaHybridCache\n\n# 1. Pure O(1) Holographic Cache\ncache = KalpanaDynamicCache(num_layers=32, bands=4096)\n\n# 2. Hybrid Sliding-Window Cache (Exact 128 tokens + Long Range RIF)\nhybrid_cache = KalpanaHybridCache(num_layers=32, sliding_window=128, bands=4096)\n\n# Pass directly into any open-source model\n# outputs = model.generate(inputs, past_key_values=cache, max_new_tokens=128)\nprint("KV Cache memory strictly bounded at O(1)!")\n\`\`\``;
-  } 
-  // 6. Dynamic Real-World Knowledge Retrieval (Open Encyclopedic Intelligence)
+  }
+  // 6. Physics: Why the Sky is Blue
+  else if (pLower.includes('sky is blue') || pLower.includes('sky blue')) {
+    baseResponse += `### 🌌 Why the Sky is Blue (Rayleigh Scattering)
+
+The sky appears blue due to a physical optical phenomenon known as **Rayleigh Scattering**:
+
+1. **Solar Light Spectrum:** Sunlight comprises all colors of visible light combined (white light). Red light has the longest wavelength (~700 nm), while blue and violet light have the shortest wavelengths (~400 nm).
+2. **Molecular Scattering in Atmosphere:** When sunlight enters Earth's atmosphere, it collides with oxygen ($O_2$) and nitrogen ($N_2$) gas molecules. Shorter wavelengths (blue and violet) scatter in all directions roughly **10 times more efficiently** than longer red wavelengths, following Rayleigh's law:
+$$I \\propto \\frac{1}{\\lambda^4}$$
+3. **Human Eye Perception:** Although violet light scatters slightly more than blue light, human eye cone photoreceptors are far more sensitive to blue wavelengths, making the daytime sky appear bright blue!`;
+  }
+  // 7. Dynamic Real-World Knowledge Retrieval (Open Encyclopedic Intelligence)
   else {
     const dynamicData = await fetchDynamicKnowledge(prompt);
     if (dynamicData) {
       baseResponse += dynamicData;
     } else {
-      const cleanSubject = prompt.replace(/^(who is|who was|what is|what was|what are|explain|tell me about|how does|how do|describe)\s+/i, '').replace(/\?+$/, '').trim();
+      const cleanSubject = prompt.replace(/^(who is|who was|what is|what was|what are|explain|tell me about|how does|how do|describe|why is the|why is|why does|why the|why)\s+/i, '').replace(/\?+$/, '').trim();
       const subjectTitle = cleanSubject ? cleanSubject.charAt(0).toUpperCase() + cleanSubject.slice(1) : prompt;
       baseResponse += `### 💡 Analysis of ${subjectTitle}\n\n**${subjectTitle}** is an important topic in its field. You can ingest custom notes, research papers, or documentation into the **Kalpana Knowledge File Ingestion** manager for real-time grounded recall and synthesis.`;
     }
