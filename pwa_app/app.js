@@ -430,15 +430,86 @@ function handleFile(file) {
   reader.readAsText(file);
 }
 
-btnIngestChunk.addEventListener('click', () => {
-  const text = rawTextChunk.value.trim();
-  if (text) {
-    ingestToVault(text);
-    rawTextChunk.value = '';
-    docModal.classList.remove('open');
-    alert('Knowledge chunk ingested into O(1) holographic memory!');
-  }
-});
+// --- Holographic Wave Spectrum Visualizer ---
+const waveCanvas = document.getElementById('waveCanvas');
+let animOffset = 0;
 
-// Start the Application
+function drawWaveSpectrum() {
+  if (!waveCanvas) return;
+  const ctx = waveCanvas.getContext('2d');
+  const w = waveCanvas.width;
+  const h = waveCanvas.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Draw Grid lines
+  ctx.strokeStyle = 'rgba(99, 102, 241, 0.1)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 30) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+
+  // Draw Cyan Wave: Real state projection
+  ctx.beginPath();
+  ctx.strokeStyle = '#06b6d4';
+  ctx.lineWidth = 1.5;
+  for (let x = 0; x < w; x++) {
+    const y = h / 2 + Math.sin((x * 0.05) + animOffset) * (h * 0.3) * Math.cos(x * 0.02);
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Draw Indigo Wave: Imaginary state projection
+  ctx.beginPath();
+  ctx.strokeStyle = '#818cf8';
+  ctx.lineWidth = 1.5;
+  for (let x = 0; x < w; x++) {
+    const y = h / 2 + Math.cos((x * 0.04) - animOffset * 0.8) * (h * 0.28) * Math.sin(x * 0.015);
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  animOffset += isGenerating ? 0.08 : 0.02;
+  requestAnimationFrame(drawWaveSpectrum);
+}
+
+// --- Knowledge Pack (.kp) Export ---
+const btnExportKp = document.getElementById('btnExportKp');
+if (btnExportKp) {
+  btnExportKp.addEventListener('click', () => {
+    if (!memoryVault || memoryVault.totalEntries === 0) {
+      alert('Memory matrix is currently empty. Ingest knowledge chunks before exporting.');
+      return;
+    }
+
+    const packData = {
+      version: '1.0.0',
+      engine: 'Kalpana-RIF',
+      bands: BANDS,
+      dim: DIM,
+      totalEntries: memoryVault.totalEntries,
+      exportedAt: new Date().toISOString(),
+      documents: Array.from(memoryVault.documents.entries()).map(([t, doc]) => ({
+        t,
+        text: doc.text || doc.metadata?.text || '',
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(packData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Kalpana_Knowledge_Pack_${Date.now()}.kp`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+// Start the Application and Visualizer Loop
 initApp();
+drawWaveSpectrum();
