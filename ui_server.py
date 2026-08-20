@@ -14,6 +14,10 @@ import torch
 from flask import Flask, request, jsonify, Response, render_template_string
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
 
+# Limit PyTorch CPU threads so inference never starves the OS or laptop
+num_cpu_threads = max(1, min(4, (os.cpu_count() or 4) // 2))
+torch.set_num_threads(num_cpu_threads)
+
 # Add repo root to path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from kalpana_embed_to_kv import KalpanaDynamicCache, KalpanaHybridCache
@@ -568,8 +572,12 @@ def chat_stream():
     if past_key_values is not None:
         generation_kwargs["past_key_values"] = past_key_values
 
-    # Run generation in background thread
-    thread = threading.Thread(target=current_model.generate, kwargs=generation_kwargs)
+    # Run generation in background thread with inference mode
+    def run_inference():
+        with torch.inference_mode():
+            current_model.generate(**generation_kwargs)
+
+    thread = threading.Thread(target=run_inference)
     thread.start()
 
     def generate():
