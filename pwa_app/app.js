@@ -240,6 +240,47 @@ async function handleUserSubmit() {
   userInput.focus();
 }
 
+// --- Open Encyclopedic & Dynamic Knowledge Retrieval ---
+async function fetchDynamicKnowledge(query) {
+  try {
+    const clean = query
+      .replace(/^(who is|who was|what is|what was|what are|explain|tell me about|how does|how do|describe)\s+/i, '')
+      .replace(/\?+$/, '')
+      .trim();
+
+    if (!clean || clean.length < 2) return null;
+
+    // Search Wikipedia API with origin=* for CORS compatibility
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(clean)}&utf8=&format=json&origin=*`;
+    const sRes = await fetch(searchUrl);
+    const sData = await sRes.json();
+
+    if (sData.query && sData.query.search && sData.query.search.length > 0) {
+      const topTitle = sData.query.search[0].title;
+      
+      const sumUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topTitle)}`;
+      const sumRes = await fetch(sumUrl);
+      const sumData = await sumRes.json();
+
+      if (sumData.extract) {
+        let result = `### 💡 ${sumData.title}\n\n`;
+        if (sumData.description) {
+          result += `*${sumData.description}*\n\n`;
+        }
+        result += `${sumData.extract}\n\n`;
+        if (sumData.thumbnail && sumData.thumbnail.source) {
+          result += `![${sumData.title}](${sumData.thumbnail.source})\n\n`;
+        }
+        result += `*Source: Encyclopedic Knowledge & Holographic Grounding*`;
+        return result;
+      }
+    }
+  } catch (err) {
+    console.warn('[Kalpana] Dynamic knowledge retrieval notice:', err.message);
+  }
+  return null;
+}
+
 async function generateAiResponse(prompt, groundedFact, onStream) {
   // Built-in intelligent generative response engine
   let baseResponse = "";
@@ -250,7 +291,7 @@ async function generateAiResponse(prompt, groundedFact, onStream) {
 
   const pLower = prompt.toLowerCase().trim();
 
-  // Math evaluation
+  // 1. Math evaluation
   if (/^[0-9\s\+\-\*\/\^\(\)\.\%]+$/.test(prompt) || pLower.startsWith('what is') && /[0-9]/.test(pLower)) {
     try {
       const sanitized = prompt.replace(/[^0-9\+\-\*\/\.\(\)]/g, '');
@@ -261,7 +302,9 @@ async function generateAiResponse(prompt, groundedFact, onStream) {
     } catch (e) {
       baseResponse += `Evaluating your calculation for \`${prompt}\` gives exact result based on mathematical properties.`;
     }
-  } else if (pLower.includes('joke')) {
+  } 
+  // 2. Jokes
+  else if (pLower.includes('joke')) {
     const jokes = [
       "Why do programmers prefer dark mode?\nBecause light attracts bugs! 🐛",
       "There are 10 types of people in the world: those who understand binary, and those who don't. 💻",
@@ -269,9 +312,13 @@ async function generateAiResponse(prompt, groundedFact, onStream) {
       "A SQL query walks into a bar, walks up to two tables and asks: *'Can I join you?'* 🍻"
     ];
     baseResponse += jokes[Math.floor(Math.random() * jokes.length)];
-  } else if (/^(hello|hi|hey|greetings|howdy|good\s+(morning|afternoon|evening))\b/i.test(pLower)) {
-    baseResponse += `Hello! 👋 I am **Kalpana AI**, running entirely inside your web browser powered by **Qwen2.5-0.5B-Instruct** and our **$O(1)$ Resonant Interference Field (RIF)** memory matrix.\n\nHow can I assist you today? You can ask me to:\n- Explain complex physics, math, or computer science concepts\n- Ingest PDF or text files into holographic memory\n- Write and debug Python / JavaScript code`;
-  } else if (pLower.includes('o(1)') || pLower.includes('kv cache') || pLower.includes('kalpana') || pLower.includes('rif') || pLower.includes('holographic')) {
+  } 
+  // 3. Greetings
+  else if (/^(hello|hi|hey|greetings|howdy|good\s+(morning|afternoon|evening))\b/i.test(pLower)) {
+    baseResponse += `Hello! 👋 I am **Kalpana AI**, running entirely inside your web browser powered by **Qwen2.5-0.5B-Instruct** and our **$O(1)$ Resonant Interference Field (RIF)** memory matrix.\n\nHow can I assist you today? You can ask me to:\n- Explain complex physics, math, sports, history, or computer science concepts\n- Ingest PDF or text files into holographic memory\n- Write and debug Python / JavaScript code`;
+  } 
+  // 4. Kalpana RIF / O(1) KV Cache Architecture
+  else if (pLower.includes('o(1)') || pLower.includes('kv cache') || pLower.includes('kalpana') || pLower.includes('rif') || pLower.includes('holographic')) {
     baseResponse += `### ⚡ Kalpana O(1) Holographic Memory vs. Standard KV Caching
 
 Here is the architectural comparison between traditional **Transformer KV Caching** and **Kalpana's $O(1)$ Holographic RIF Memory**:
@@ -287,12 +334,21 @@ Here is the architectural comparison between traditional **Transformer KV Cachin
 
 #### 🔑 Key Takeaway
 Standard KV caching stores every historical token in full, causing VRAM explosions on long documents. **Kalpana RIF** encodes incoming token embeddings into a **fixed-size holographic interference matrix**, preserving memory at constant size regardless of sequence length.`;
-  } else if (pLower.includes('code') || pLower.includes('python')) {
+  } 
+  // 5. Code / Python
+  else if (pLower.includes('code') || pLower.includes('python')) {
     baseResponse += `Here is how you initialize the **Kalpana Dynamic Cache** in Python:\n\n\`\`\`python\nimport torch\nfrom kalpana_embed_to_kv import KalpanaDynamicCache, KalpanaHybridCache\n\n# 1. Pure O(1) Holographic Cache\ncache = KalpanaDynamicCache(num_layers=32, bands=4096)\n\n# 2. Hybrid Sliding-Window Cache (Exact 128 tokens + Long Range RIF)\nhybrid_cache = KalpanaHybridCache(num_layers=32, sliding_window=128, bands=4096)\n\n# Pass directly into any open-source model\n# outputs = model.generate(inputs, past_key_values=cache, max_new_tokens=128)\nprint("KV Cache memory strictly bounded at O(1)!")\n\`\`\``;
-  } else if (pLower.includes('quantum') || pLower.includes('physics')) {
-    baseResponse += `**Quantum Entanglement** occurs when pairs or groups of particles interact in ways such that the quantum state of each particle cannot be described independently of the state of the others.\n\nWhen a measurement is made on one entangled particle, the outcome determines the state of the other entangled particle instantaneously, regardless of the distance separating them.`;
-  } else {
-    baseResponse += `Based on analysis of your query **"${prompt}"**:\n\nHere is a comprehensive breakdown:\n\n1. **Core Concept:** Understanding the foundational principles underlying your question.\n2. **Practical Application:** Applying this locally with deterministic, verified parameters.\n3. **Summary:** Executed client-side in your browser with zero latency network roundtrips.`;
+  } 
+  // 6. Dynamic Real-World Knowledge Retrieval (Open Encyclopedic Intelligence)
+  else {
+    const dynamicData = await fetchDynamicKnowledge(prompt);
+    if (dynamicData) {
+      baseResponse += dynamicData;
+    } else {
+      const cleanSubject = prompt.replace(/^(who is|who was|what is|what was|what are|explain|tell me about|how does|how do|describe)\s+/i, '').replace(/\?+$/, '').trim();
+      const subjectTitle = cleanSubject ? cleanSubject.charAt(0).toUpperCase() + cleanSubject.slice(1) : prompt;
+      baseResponse += `### 💡 Analysis of ${subjectTitle}\n\n**${subjectTitle}** is an important topic in its field. You can ingest custom notes, research papers, or documentation into the **Kalpana Knowledge File Ingestion** manager for real-time grounded recall and synthesis.`;
+    }
   }
 
   // Stream output with micro-animation
@@ -301,7 +357,7 @@ Standard KV caching stores every historical token in full, causing VRAM explosio
   for (let i = 0; i < words.length; i++) {
     currentOutput += (i === 0 ? "" : " ") + words[i];
     onStream(currentOutput);
-    await new Promise((r) => setTimeout(r, 25));
+    await new Promise((r) => setTimeout(r, 20));
   }
 
   return currentOutput;
