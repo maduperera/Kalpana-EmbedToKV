@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalpana EmbedToKV — O(1) Holographic Memory KV Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0c14;
+      --bg-secondary: #101424;
+      --bg-card: rgba(22, 28, 48, 0.7);
+      --border: rgba(99, 102, 241, 0.2);
+      --border-active: rgba(99, 102, 241, 0.6);
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.35);
+      --cyan: #06b6d4;
+      --emerald: #10b981;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #171d3d 0%, var(--bg-primary) 70%);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      padding: 0.6rem 1.2rem;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 1.2rem;
+      letter-spacing: -0.5px;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .header-tagline {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .stat-badge {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--emerald);
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 868px) {
+      .grid-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .card-subtitle {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+    }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      background: rgba(10, 12, 20, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      padding: 0.85rem 1rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    textarea:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent), #4f46e5);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 0.75rem 1.4rem;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      margin-top: 1rem;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.1);
+      box-shadow: none;
+    }
+
+    .memory-visualizer {
+      margin-top: 1rem;
+      background: rgba(10, 12, 20, 0.9);
+      border-radius: 10px;
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .stat-row:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+    }
+
+    .stat-val {
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    .feed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .feed-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+    }
+
+    .feed-meta {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--cyan);
+      margin-bottom: 0.2rem;
+    }
+
+    .results-panel {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .result-card {
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid var(--border-active);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .score-badge {
+      background: var(--accent);
+      color: white;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      float: right;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-group">
+        <div class="logo-badge">KALPANA</div>
+        <div>
+          <h2>EmbedToKV Engine</h2>
+          <div class="header-tagline">O(1) Resonant Holographic Memory Substrate</div>
+        </div>
+      </div>
+      <div class="stat-badge">⚡ O(1) Memory Active</div>
+    </header>
+
+    <div class="grid-layout">
+      <!-- Ingestion Card -->
+      <div class="card">
+        <div class="card-title">📥 1. Ingest Semantic Embeddings</div>
+        <div class="card-subtitle">Convert natural text into high-dimensional vectors and inject into fixed-memory RIF.</div>
+        
+        <textarea id="docInput" placeholder="Enter knowledge snippet or text chunk to ingest..."></textarea>
+        <div style="display: flex; gap: 0.75rem;">
+          <button id="btnIngest" class="btn" style="flex: 1;">Ingest to Holographic KV</button>
+          <button id="btnSample" class="btn btn-secondary">Load Preset Data</button>
+        </div>
+
+        <div class="memory-visualizer">
+          <div class="stat-row">
+            <span class="stat-label">Stored Vectors (t):</span>
+            <span id="statStored" class="stat-val">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Holographic Resolution (Bands):</span>
+            <span class="stat-val">2048</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Memory Footprint (WASM RIF):</span>
+            <span id="statMem" class="stat-val">3.00 MB (Constant)</span>
+          </div>
+        </div>
+
+        <div class="feed-list" id="ingestFeed"></div>
+      </div>
+
+      <!-- Recall Card -->
+      <div class="card">
+        <div class="card-title">🔍 2. Resonance Query & Recall</div>
+        <div class="card-subtitle">Query holographic temporal coordinates via parallel wave sweep.</div>
+
+        <input type="text" id="queryInput" placeholder="Ask a question or enter a semantic query...">
+        <button id="btnSearch" class="btn">Execute Holographic Sweep</button>
+
+        <div class="results-panel" id="resultsArea">
+          <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-top: 2rem;">
+            Ingest documents and run a query to test holographic resonance recall.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

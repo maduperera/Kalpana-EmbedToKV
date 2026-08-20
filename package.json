@@ -1,0 +1,27 @@
+{
+  "name": "kalpana-embed-to-kv",
+  "version": "1.0.0",
+  "description": "O(1) Holographic Memory KV Cache Replacement Engine powered by Resonant Interference Field (RIF) WebAssembly Math Engine",
+  "main": "pkg_vault/kalpana_vault_embed.js",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "kalpana",
+    "kv-cache",
+    "attention",
+    "llm",
+    "transformer",
+    "webassembly",
+    "wasm",
+    "memory",
+    "holographic"
+  ],
+  "author": "Vijñāna AI <support@vijnanaai.com>",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maduperera/Kalpana-EmbedToKV.git"
+  }
+}
