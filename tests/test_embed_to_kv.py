@@ -96,6 +96,21 @@ class TestKalpanaEmbedToKV(unittest.TestCase):
         self.assertEqual(cache.get_seq_length(), 3)
         self.assertEqual(past_k0.shape, (self.batch_size, self.num_heads, 3, self.head_dim))
 
+    def test_hybrid_cache(self):
+        """Verify hybrid cache sliding window + long range RIF prefix."""
+        from kalpana_embed_to_kv import KalpanaHybridCache
+        cache = KalpanaHybridCache(num_layers=1, sliding_window=4, bands=self.bands)
+
+        # Ingest 10 tokens
+        for step in range(10):
+            k = torch.randn(self.batch_size, self.num_heads, 1, self.head_dim)
+            v = torch.randn(self.batch_size, self.num_heads, 1, self.head_dim)
+            past_k, past_v = cache.update(k, v, layer_idx=0)
+
+        self.assertEqual(cache.get_seq_length(), 10)
+        self.assertEqual(past_k.shape, (self.batch_size, self.num_heads, 10, self.head_dim))
+        self.assertEqual(past_v.shape, (self.batch_size, self.num_heads, 10, self.head_dim))
+
 
 if __name__ == "__main__":
     unittest.main()

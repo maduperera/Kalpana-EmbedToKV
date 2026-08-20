@@ -75,16 +75,13 @@ print("Matched Document:", documents[best_match_idx])
 
 ### 3. HuggingFace KV Cache Drop-in Integration
 ```python
-from kalpana_embed_to_kv import KalpanaDynamicCache
+from kalpana_embed_to_kv import KalpanaDynamicCache, KalpanaHybridCache
 
-# Initialize Kalpana Dynamic Cache for multi-layer LLM
-kalpana_cache = KalpanaDynamicCache(
-    num_layers=32,
-    batch_size=1,
-    num_heads=32,
-    head_dim=128,
-    bands=2048
-)
+# Pure O(1) Memory Cache
+kalpana_cache = KalpanaDynamicCache(num_layers=32, bands=4096)
+
+# OR Hybrid Cache: Exact local sliding window (e.g. 128 tokens) + O(1) RIF long-range memory
+hybrid_cache = KalpanaHybridCache(num_layers=32, sliding_window=128, bands=4096)
 
 # Pass directly to model generation
 # outputs = model.generate(input_ids, past_key_values=kalpana_cache)
@@ -122,10 +119,10 @@ console.log("Top Resonance Match:", results[0]);
 Kalpana-EmbedToKV/
 ├── kalpana_embed_to_kv/             # Core Python Package
 │   ├── __init__.py                  # Package exports
-│   ├── core.py                      # KalpanaRIFTensor & EmbedToKVMatrix
-│   ├── kv_cache.py                  # KalpanaKVCache & KalpanaDynamicCache
+│   ├── core.py                      # KalpanaRIFTensor (Optimized einsum sweep)
+│   ├── kv_cache.py                  # KalpanaDynamicCache & KalpanaHybridCache
 │   ├── attention.py                 # KalpanaAttentionLayer & KV Interpreter
-│   └── extractor.py                 # Semantic vector embedding bridge
+│   └── extractor.py                 # Transformer embedding bridge (all-MiniLM)
 ├── pkg_vault/                       # Core WebAssembly Engine from Kalpana-SDK
 │   ├── kalpana_vault.js             # WASM loader & glue code
 │   ├── kalpana_vault.wasm           # Compiled RIF engine binary
@@ -133,12 +130,14 @@ Kalpana-EmbedToKV/
 ├── examples/                        # Working examples & benchmarks
 │   ├── demo_embed_to_kv.py          # End-to-end semantic text to KV & recall
 │   ├── demo_huggingface_kv.py       # HuggingFace multi-layer dynamic cache test
-│   └── benchmark_memory_scaling.py  # 3M token empirical memory scaling test
+│   ├── evaluate_llm_kv_replacement.py # Side-by-side text generation on open-source LLM
+│   ├── benchmark_needle_in_haystack.py# 10k-50k token Needle-in-a-Haystack test
+│   └── benchmark_memory_scaling.py  # Empirical O(1) vs O(N) memory scaling test
 ├── web_demo/                        # Interactive Browser-Native Demo
 │   ├── index.html                   # Modern glassmorphic Web UI
 │   └── app.js                       # Client-side embedding & sweep controller
 ├── assets/                          # Architecture diagrams & branding
-├── tests/                           # Unit test suite
+├── tests/                           # Unit test suite (100% passing)
 ├── setup.py                         # Python package setup
 ├── package.json                     # NPM package configuration
 └── README.md

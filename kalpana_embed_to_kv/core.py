@@ -114,6 +114,7 @@ class KalpanaRIFTensor(nn.Module):
     def batch_reconstruct(self, t_range: torch.Tensor) -> torch.Tensor:
         """
         Vectorized sweep reconstructing past vectors for a range of temporal coordinates.
+        Optimized with einsum tensor contractions to eliminate intermediate memory allocations.
         
         Args:
             t_range: 1D Tensor of coordinates of length T.
@@ -122,22 +123,19 @@ class KalpanaRIFTensor(nn.Module):
             Reconstructed past vectors: shape `[batch_size, num_heads, T, dim]`.
         """
         t_seq = t_range.to(self.device, dtype=self.dtype)
-        # [T, 1, 1, 1, 1]
-        t_view = t_seq.view(-1, 1, 1, 1, 1)
-        angle = self.kappa * self.o3 * t_view + self.p4
-        cr = torch.cos(angle)
-        ci = torch.sin(angle)
+        o3_1d = self.o3.view(-1)
+        p4_1d = self.p4.view(-1)
 
-        # state_re: [1, batch, heads, bands, dim]
-        state_re_exp = self.state_re.unsqueeze(0)
-        state_im_exp = self.state_im.unsqueeze(0)
+        # Compute 2D temporal phase matrix: [T, Bands]
+        angle_mat = torch.outer(t_seq, self.kappa * o3_1d) + p4_1d.unsqueeze(0)
+        cr_mat = torch.cos(angle_mat)
+        ci_mat = torch.sin(angle_mat)
 
-        # rv: [T, batch, heads, bands, dim]
-        rv = state_re_exp * cr + state_im_exp * ci
-        # Mean across bands -> [T, batch, heads, dim]
-        reconstructed = rv.mean(dim=3)
-        # Permute to [batch, heads, T, dim]
-        return reconstructed.permute(1, 2, 0, 3)
+        # Contract over bands dimension directly into [batch, heads, T, dim]
+        re_part = torch.einsum('tk,nhkd->nhtd', cr_mat, self.state_re)
+        im_part = torch.einsum('tk,nhkd->nhtd', ci_mat, self.state_im)
+
+        return (re_part + im_part) / float(self.bands)
 
     def memory_footprint_mb(self) -> float:
         """Returns total memory footprint of the RIF storage in Megabytes (MB)."""

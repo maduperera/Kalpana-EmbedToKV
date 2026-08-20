@@ -4,16 +4,25 @@ Powered by Resonant Interference Field (RIF) Mathematics.
 """
 
 from .core import KalpanaRIFTensor, EmbedToKVMatrix
-from .kv_cache import KalpanaKVCache, KalpanaDynamicCache
+from .kv_cache import (
+    KalpanaKVCache,
+    KalpanaDynamicCache,
+    KalpanaHybridCache,
+    KalpanaCacheLayer,
+    KalpanaHybridCacheLayer,
+)
 from .attention import KalpanaAttentionLayer, KalpanaKVInterpreter
 from .extractor import EmbeddingExtractor
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __all__ = [
     "KalpanaRIFTensor",
     "EmbedToKVMatrix",
     "KalpanaKVCache",
     "KalpanaDynamicCache",
+    "KalpanaHybridCache",
+    "KalpanaCacheLayer",
+    "KalpanaHybridCacheLayer",
     "KalpanaAttentionLayer",
     "KalpanaKVInterpreter",
     "EmbeddingExtractor",
