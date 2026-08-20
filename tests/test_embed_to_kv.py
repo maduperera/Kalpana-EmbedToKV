@@ -83,11 +83,8 @@ class TestKalpanaEmbedToKV(unittest.TestCase):
 
     def test_kv_cache_multi_layer(self):
         """Verify multi-layer cache updates and sequence lengths."""
-        cache = KalpanaKVCache(
+        cache = KalpanaDynamicCache(
             num_layers=2,
-            batch_size=self.batch_size,
-            num_heads=self.num_heads,
-            head_dim=self.head_dim,
             bands=self.bands,
         )
         k = torch.randn(self.batch_size, self.num_heads, 3, self.head_dim)

@@ -52,10 +52,12 @@ class KalpanaRIFTensor(nn.Module):
         bands_f = float(bands - 1) if bands > 1 else 1.0
         step = (max_freq - min_freq) / bands_f
 
+        # Orthogonal harmonic frequency basis for maximum SNR and interference cancellation
         o3 = min_freq + torch.arange(bands, device=device, dtype=dtype) * step
         self.register_buffer("o3", o3.view(1, 1, bands, 1))
 
-        p4 = 2.0 * math.pi * torch.rand(bands, device=device, dtype=dtype)
+        # Uniformly distributed phase angles
+        p4 = torch.linspace(0, 2.0 * math.pi, bands, device=device, dtype=dtype)
         self.register_buffer("p4", p4.view(1, 1, bands, 1))
 
         self.total_tokens_stored = 0

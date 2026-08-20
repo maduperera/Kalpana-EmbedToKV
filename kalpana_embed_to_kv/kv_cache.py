@@ -1,164 +1,147 @@
 """
 KV Cache Replacement for Transformers and HuggingFace LLM generation.
+Compatible with transformers.cache_utils.Cache and CacheLayerMixin.
 """
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 import torch
 from .core import KalpanaRIFTensor
 
+try:
+    from transformers.cache_utils import Cache, CacheLayerMixin
+    _HAS_TRANSFORMERS_CACHE = True
+except ImportError:
+    class Cache:
+        def __init__(self, *args, **kwargs):
+            pass
+    class CacheLayerMixin:
+        pass
+    _HAS_TRANSFORMERS_CACHE = False
 
-class KalpanaKVCache:
+
+class KalpanaCacheLayer(CacheLayerMixin):
     """
-    Multi-layer O(1) Key-Value Cache manager for Auto-Regressive Language Models.
-    Maintains independent fixed-size RIF tensors per transformer layer.
+    Individual Transformer Layer Cache powered by O(1) RIF Holographic Memory.
+    Replaces torch.cat with constant-memory wave interference superposition.
     """
-    def __init__(
-        self,
-        num_layers: int,
-        batch_size: int = 1,
-        num_heads: int = 32,
-        head_dim: int = 128,
-        bands: int = 2048,
-        device: Union[str, torch.device] = 'cpu',
-        dtype: torch.dtype = torch.float32,
-    ):
-        self.num_layers = num_layers
-        self.batch_size = batch_size
-        self.num_heads = num_heads
-        self.head_dim = head_dim
+    is_sliding = False
+
+    def __init__(self, bands: int = 4096, kappa: float = 1.0):
+        if _HAS_TRANSFORMERS_CACHE:
+            super().__init__()
         self.bands = bands
-        self.device = device
-        self.dtype = dtype
+        self.kappa = kappa
+        self.key_rif: Optional[KalpanaRIFTensor] = None
+        self.val_rif: Optional[KalpanaRIFTensor] = None
+        self.seen_tokens = 0
+        self.is_initialized = False
+        self.device = "cpu"
+        self.dtype = torch.float32
 
-        self.key_layers: List[KalpanaRIFTensor] = []
-        self.value_layers: List[KalpanaRIFTensor] = []
+    def lazy_initialization(self, key_states: torch.Tensor, value_states: torch.Tensor) -> None:
+        batch_size, num_heads, _, head_dim = key_states.shape
+        self.device = key_states.device
+        self.dtype = key_states.dtype
 
-        for _ in range(num_layers):
-            self.key_layers.append(
-                KalpanaRIFTensor(
-                    batch_size=batch_size,
-                    num_heads=num_heads,
-                    bands=bands,
-                    dim=head_dim,
-                    device=device,
-                    dtype=dtype,
-                )
-            )
-            self.value_layers.append(
-                KalpanaRIFTensor(
-                    batch_size=batch_size,
-                    num_heads=num_heads,
-                    bands=bands,
-                    dim=head_dim,
-                    device=device,
-                    dtype=dtype,
-                )
-            )
-
-        self._seen_tokens: int = 0
-
-    def update(
-        self,
-        key_states: torch.Tensor,
-        value_states: torch.Tensor,
-        layer_idx: int,
-        cache_kwargs: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Updates the cache with new incoming Key and Value tensors.
-        
-        Args:
-            key_states: Tensor [batch_size, num_heads, seq_len_new, head_dim]
-            value_states: Tensor [batch_size, num_heads, seq_len_new, head_dim]
-            layer_idx: Layer index to update
-            cache_kwargs: Extra options
-            
-        Returns:
-            Tuple of (all_keys, all_values) spanning the entire context window.
-        """
-        seq_len_new = key_states.shape[2]
-        
-        # Inject each incoming token into RIF
-        for step in range(seq_len_new):
-            t = self._seen_tokens + step
-            k_t = key_states[:, :, step, :]
-            v_t = value_states[:, :, step, :]
-            self.key_layers[layer_idx].write(t, k_t)
-            self.value_layers[layer_idx].write(t, v_t)
-
-        total_tokens = self._seen_tokens + seq_len_new
-        t_range = torch.arange(0, total_tokens, device=self.device).float()
-
-        past_k = self.key_layers[layer_idx].batch_reconstruct(t_range)
-        past_v = self.value_layers[layer_idx].batch_reconstruct(t_range)
-
-        if layer_idx == self.num_layers - 1:
-            self._seen_tokens = total_tokens
-
-        return past_k, past_v
-
-    def get_seq_length(self, layer_idx: Optional[int] = 0) -> int:
-        """Returns the number of tokens stored in the cache."""
-        return self._seen_tokens
-
-    def get_total_memory_mb(self) -> float:
-        """Computes combined memory of all layers in Megabytes (MB). Constant O(1)."""
-        total = 0.0
-        for k_rif, v_rif in zip(self.key_layers, self.value_layers):
-            total += k_rif.memory_footprint_mb() + v_rif.memory_footprint_mb()
-        return total
-
-    def reset(self) -> None:
-        """Clears all layer states."""
-        for k_rif, v_rif in zip(self.key_layers, self.value_layers):
-            k_rif.reset()
-            v_rif.reset()
-        self._seen_tokens = 0
-
-
-class KalpanaDynamicCache:
-    """
-    HuggingFace compatible DynamicCache adapter interface.
-    Allows seamless drop-in into model.generate(..., past_key_values=kalpana_cache).
-    """
-    def __init__(
-        self,
-        num_layers: int = 32,
-        batch_size: int = 1,
-        num_heads: int = 32,
-        head_dim: int = 128,
-        bands: int = 2048,
-        device: Union[str, torch.device] = 'cpu',
-    ):
-        self.engine = KalpanaKVCache(
-            num_layers=num_layers,
+        self.key_rif = KalpanaRIFTensor(
             batch_size=batch_size,
             num_heads=num_heads,
-            head_dim=head_dim,
-            bands=bands,
-            device=device,
+            bands=self.bands,
+            dim=head_dim,
+            kappa=self.kappa,
+            device=self.device,
+            dtype=self.dtype,
         )
+        self.val_rif = KalpanaRIFTensor(
+            batch_size=batch_size,
+            num_heads=num_heads,
+            bands=self.bands,
+            dim=head_dim,
+            kappa=self.kappa,
+            device=self.device,
+            dtype=self.dtype,
+        )
+        self.seen_tokens = 0
+        self.is_initialized = True
 
     def update(
-        self,
-        key_states: torch.Tensor,
-        value_states: torch.Tensor,
-        layer_idx: int,
-        cache_kwargs: Optional[Dict[str, Any]] = None,
+        self, key_states: torch.Tensor, value_states: torch.Tensor, *args, **kwargs
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        return self.engine.update(key_states, value_states, layer_idx, cache_kwargs)
+        if not self.is_initialized:
+            self.lazy_initialization(key_states, value_states)
 
-    def get_seq_length(self, layer_idx: Optional[int] = 0) -> int:
-        return self.engine.get_seq_length(layer_idx)
+        batch_size, num_heads, seq_len_new, head_dim = key_states.shape
 
-    def get_usable_length(self, new_seq_length: int, layer_idx: Optional[int] = 0) -> int:
-        return self.engine.get_seq_length(layer_idx)
+        # Inject each incoming token into RIF O(1) state
+        for step in range(seq_len_new):
+            t = self.seen_tokens + step
+            k_t = key_states[:, :, step, :]
+            v_t = value_states[:, :, step, :]
+            self.key_rif.write(t, k_t)
+            self.val_rif.write(t, v_t)
 
-    def __getitem__(self, layer_idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        t_range = torch.arange(0, self.engine.get_seq_length(layer_idx), device=self.engine.device).float()
-        k = self.engine.key_layers[layer_idx].batch_reconstruct(t_range)
-        v = self.engine.value_layers[layer_idx].batch_reconstruct(t_range)
-        return k, v
+        self.seen_tokens += seq_len_new
+        t_range = torch.arange(0, self.seen_tokens, device=self.device).float()
 
-    def __len__(self) -> int:
-        return self.engine.num_layers
+        reconstructed_keys = self.key_rif.batch_reconstruct(t_range)
+        reconstructed_values = self.val_rif.batch_reconstruct(t_range)
+
+        return reconstructed_keys, reconstructed_values
+
+    def get_mask_sizes(self, query_length: int) -> Tuple[int, int]:
+        return self.seen_tokens + query_length, 0
+
+    def get_seq_length(self) -> int:
+        return self.seen_tokens
+
+    def get_max_cache_shape(self) -> int:
+        return -1
+
+    def memory_footprint_mb(self) -> float:
+        if not self.is_initialized or self.key_rif is None:
+            return 0.0
+        return self.key_rif.memory_footprint_mb() + self.val_rif.memory_footprint_mb()
+
+    def reset(self) -> None:
+        if self.is_initialized and self.key_rif is not None:
+            self.key_rif.reset()
+            self.val_rif.reset()
+        self.seen_tokens = 0
+
+
+class KalpanaDynamicCache(Cache):
+    """
+    Drop-in O(1) Memory KV Cache replacement for HuggingFace Transformers.
+    """
+    def __init__(
+        self,
+        num_layers: Optional[int] = None,
+        bands: int = 4096,
+        kappa: float = 1.0,
+        **kwargs,
+    ):
+        self.bands = bands
+        self.kappa = kappa
+        
+        if _HAS_TRANSFORMERS_CACHE:
+            if num_layers is not None:
+                layers = [KalpanaCacheLayer(bands=bands, kappa=kappa) for _ in range(num_layers)]
+                super().__init__(layers=layers)
+            else:
+                # Custom factory for dynamic instantiation per layer
+                class LayerFactory(KalpanaCacheLayer):
+                    def __init__(self, *args, **kw):
+                        super().__init__(bands=bands, kappa=kappa)
+                super().__init__(layer_class_to_replicate=LayerFactory)
+        else:
+            self.layers = [KalpanaCacheLayer(bands=bands, kappa=kappa) for _ in range(num_layers or 32)]
+
+    def get_total_memory_mb(self) -> float:
+        total = 0.0
+        for layer in self.layers:
+            if isinstance(layer, KalpanaCacheLayer):
+                total += layer.memory_footprint_mb()
+        return total
+
+# Alias for backwards compatibility
+KalpanaKVCache = KalpanaDynamicCache

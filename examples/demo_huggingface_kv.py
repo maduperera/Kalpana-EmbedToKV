@@ -23,13 +23,15 @@ def simulate_huggingface_layer_generation():
     # 1. Initialize Kalpana Dynamic Cache
     cache = KalpanaDynamicCache(
         num_layers=NUM_LAYERS,
-        batch_size=1,
-        num_heads=NUM_HEADS,
-        head_dim=HEAD_DIM,
         bands=BANDS,
-        device="cpu",
     )
-    print(f"Kalpana Total Cache Size: {cache.engine.get_total_memory_mb():.2f} MB (Fixed across all {NUM_LAYERS} layers)")
+    # Lazy initial state warmup
+    k_warmup = torch.zeros(1, NUM_HEADS, 1, HEAD_DIM)
+    v_warmup = torch.zeros(1, NUM_HEADS, 1, HEAD_DIM)
+    for layer_idx in range(NUM_LAYERS):
+        cache.layers[layer_idx].lazy_initialization(k_warmup, v_warmup)
+
+    print(f"Kalpana Total Cache Size: {cache.get_total_memory_mb():.2f} MB (Fixed across all {NUM_LAYERS} layers)")
 
     # 2. Ingest Prompt Key/Value states
     print(f"\n[Step 1] Ingesting Prompt ({SEQ_LEN_PROMPT} tokens)...")
@@ -49,7 +51,7 @@ def simulate_huggingface_layer_generation():
             past_k, past_v = cache.update(k_new, v_new, layer_idx=layer_idx)
 
     print(f"Total Sequence Length processed: {cache.get_seq_length()} tokens")
-    print(f"Final Memory Size: {cache.engine.get_total_memory_mb():.2f} MB")
+    print(f"Final Memory Size: {cache.get_total_memory_mb():.2f} MB")
     print("\n[OK] HuggingFace DynamicCache simulation verified successfully!")
 
 
