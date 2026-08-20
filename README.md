@@ -2,6 +2,11 @@
 
 > **$O(1)$ Holographic Memory KV Cache Replacement Engine powered by Resonant Interference Field (RIF) Mathematics.**
 
+[![Deploy Kalpana PWA to GitHub Pages](https://github.com/maduperera/Kalpana-EmbedToKV/actions/workflows/deploy.yml/badge.svg)](https://github.com/maduperera/Kalpana-EmbedToKV/actions/workflows/deploy.yml)
+[![Live PWA Web App](https://img.shields.io/badge/Live%20PWA%20App-Online-emerald?style=flat&logo=pwa)](https://maduperera.github.io/Kalpana-EmbedToKV/)
+
+🚀 **[Click Here to Launch Live In-Browser PWA Web App](https://maduperera.github.io/Kalpana-EmbedToKV/)**
+
 ---
 
 ## 🌟 Executive Overview
