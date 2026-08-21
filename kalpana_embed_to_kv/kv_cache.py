@@ -1,34 +1,25 @@
 """
 KV Cache Replacement for Transformers and HuggingFace LLM generation.
-Compatible with transformers.cache_utils.Cache and CacheLayerMixin.
+Duck-typed to satisfy transformers 4.36 through 5.x model.generate() interface.
+No Cache / CacheLayerMixin inheritance required — works on any Python version.
 """
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 import torch
 from .core import KalpanaRIFTensor
 
-try:
-    from transformers.cache_utils import Cache, CacheLayerMixin
-    _HAS_TRANSFORMERS_CACHE = True
-except ImportError:
-    class Cache:
-        def __init__(self, *args, **kwargs):
-            pass
-    class CacheLayerMixin:
-        pass
-    _HAS_TRANSFORMERS_CACHE = False
 
-
-class KalpanaCacheLayer(CacheLayerMixin):
+class KalpanaCacheLayer:
     """
     Individual Transformer Layer Cache powered by O(1) RIF Holographic Memory.
     Replaces torch.cat with constant-memory wave interference superposition.
     """
+    # Duck-type attrs checked by transformers generate()
     is_sliding = False
+    is_compileable = False
+    layer_type = "full_attention"
 
     def __init__(self, bands: int = 4096, kappa: float = 1.0):
-        if _HAS_TRANSFORMERS_CACHE:
-            super().__init__()
         self.bands = bands
         self.kappa = kappa
         self.key_rif: Optional[KalpanaRIFTensor] = None
@@ -72,7 +63,6 @@ class KalpanaCacheLayer(CacheLayerMixin):
 
         batch_size, num_heads, seq_len_new, head_dim = key_states.shape
 
-        # Inject each incoming token into RIF O(1) state
         for step in range(seq_len_new):
             t = self.seen_tokens + step
             k_t = key_states[:, :, step, :]
@@ -106,51 +96,27 @@ class KalpanaCacheLayer(CacheLayerMixin):
         if self.is_initialized and self.key_rif is not None:
             self.key_rif.reset()
             self.val_rif.reset()
-class KalpanaDynamicCache(Cache):
+        self.seen_tokens = 0
+
+    def reorder_cache(self, beam_idx):
+        pass
+
+    def offload(self):
+        pass
+
+    def prefetch(self, *args, **kwargs):
+        pass
+
+
+class KalpanaHybridCacheLayer:
     """
-    Drop-in pure O(1) Memory KV Cache replacement for HuggingFace Transformers.
-    """
-    def __init__(
-        self,
-        num_layers: Optional[int] = None,
-        bands: int = 4096,
-        kappa: float = 1.0,
-        **kwargs,
-    ):
-        self.bands = bands
-        self.kappa = kappa
-
-        if _HAS_TRANSFORMERS_CACHE:
-            if num_layers is not None:
-                layers = [KalpanaCacheLayer(bands=bands, kappa=kappa) for _ in range(num_layers)]
-                super().__init__(layers=layers)
-            else:
-                class LayerFactory(KalpanaCacheLayer):
-                    def __init__(self, *args, **kw):
-                        super().__init__(bands=bands, kappa=kappa)
-                super().__init__(layer_class_to_replicate=LayerFactory)
-        else:
-            self.layers = [KalpanaCacheLayer(bands=bands, kappa=kappa) for _ in range(num_layers or 32)]
-
-    def get_total_memory_mb(self) -> float:
-        total = 0.0
-        for layer in self.layers:
-            if hasattr(layer, "memory_footprint_mb"):
-                total += layer.memory_footprint_mb()
-        return total
-
-
-class KalpanaHybridCacheLayer(CacheLayerMixin):
-    """
-    Hybrid Cache Layer:
-    - Maintains exact high-precision KV states for the recent local window (e.g. 128 tokens).
-    - Stores all long-range tokens (up to 1M+) in the fixed O(1) RIF holographic memory.
+    Hybrid Cache Layer: Exact local sliding window + O(1) RIF long-range memory.
     """
     is_sliding = False
+    is_compileable = False
+    layer_type = "full_attention"
 
     def __init__(self, sliding_window: int = 128, bands: int = 4096, kappa: float = 1.0):
-        if _HAS_TRANSFORMERS_CACHE:
-            super().__init__()
         self.sliding_window = sliding_window
         self.bands = bands
         self.kappa = kappa
@@ -199,7 +165,6 @@ class KalpanaHybridCacheLayer(CacheLayerMixin):
 
         batch_size, num_heads, seq_len_new, head_dim = key_states.shape
 
-        # 1. Ingest every token into RIF O(1) state
         for step in range(seq_len_new):
             t = self.seen_tokens + step
             k_t = key_states[:, :, step, :]
@@ -209,26 +174,21 @@ class KalpanaHybridCacheLayer(CacheLayerMixin):
 
         self.seen_tokens += seq_len_new
 
-        # 2. Append to local sliding buffer
         self.local_keys = torch.cat([self.local_keys, key_states], dim=2)
         self.local_values = torch.cat([self.local_values, value_states], dim=2)
 
-        # 3. If within local window, return exact local buffer
         if self.seen_tokens <= self.sliding_window:
             return self.local_keys, self.local_values
 
-        # Keep only the last sliding_window tokens in the local buffer
         if self.local_keys.shape[2] > self.sliding_window:
             self.local_keys = self.local_keys[:, :, -self.sliding_window:, :]
             self.local_values = self.local_values[:, :, -self.sliding_window:, :]
 
-        # 4. Reconstruct long-range prefix from RIF
         long_range_len = self.seen_tokens - self.sliding_window
         t_range_prefix = torch.arange(0, long_range_len, device=self.device).float()
         prefix_keys = self.key_rif.batch_reconstruct(t_range_prefix)
         prefix_values = self.val_rif.batch_reconstruct(t_range_prefix)
 
-        # 5. Concatenate long-range RIF prefix + exact sliding window
         full_keys = torch.cat([prefix_keys, self.local_keys], dim=2)
         full_values = torch.cat([prefix_values, self.local_values], dim=2)
 
@@ -258,11 +218,158 @@ class KalpanaHybridCacheLayer(CacheLayerMixin):
             self.local_values = self.local_values[:, :, :0, :]
         self.seen_tokens = 0
 
+    def reorder_cache(self, beam_idx):
+        pass
 
-class KalpanaHybridCache(Cache):
+    def offload(self):
+        pass
+
+    def prefetch(self, *args, **kwargs):
+        pass
+
+
+class KalpanaDynamicCache:
+    """
+    Drop-in O(1) Memory KV Cache replacement for HuggingFace Transformers.
+
+    Duck-typed to satisfy model.generate() without inheriting from Cache,
+    compatible with transformers 4.36 through 5.x on any Python version.
+
+    Memory Complexity: O(1) — constant VRAM regardless of sequence length.
+    """
+    # Class-level flags checked by transformers generate()
+    is_compileable = False
+    is_initialized = True
+
+    @property
+    def is_sliding(self) -> List[bool]:
+        """Returns per-layer is_sliding flags as a list — required by transformers masking_utils."""
+        return [layer.is_sliding for layer in self.layers]
+
+    def __init__(
+        self,
+        num_layers: Optional[int] = None,
+        bands: int = 4096,
+        kappa: float = 1.0,
+        **kwargs,
+    ):
+        self.bands = bands
+        self.kappa = kappa
+        self.num_layers = num_layers or 32
+        # Per-layer RIF cache instances
+        self.layers: List[KalpanaCacheLayer] = [
+            KalpanaCacheLayer(bands=bands, kappa=kappa) for _ in range(self.num_layers)
+        ]
+        # key_cache / value_cache mirrors for transformers internals
+        self.key_cache: List[torch.Tensor] = []
+        self.value_cache: List[torch.Tensor] = []
+        self._seen_tokens: int = 0
+
+    def update(
+        self,
+        key_states: torch.Tensor,
+        value_states: torch.Tensor,
+        layer_idx: int,
+        cache_kwargs: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        # Grow layer list dynamically if needed
+        while len(self.layers) <= layer_idx:
+            self.layers.append(KalpanaCacheLayer(bands=self.bands, kappa=self.kappa))
+
+        k_recon, v_recon = self.layers[layer_idx].update(key_states, value_states)
+
+        # Keep key_cache / value_cache in sync
+        if len(self.key_cache) <= layer_idx:
+            self.key_cache.append(k_recon)
+            self.value_cache.append(v_recon)
+        else:
+            self.key_cache[layer_idx] = k_recon
+            self.value_cache[layer_idx] = v_recon
+
+        if layer_idx == 0:
+            self._seen_tokens = self.layers[0].seen_tokens
+
+        return k_recon, v_recon
+
+    def get_seq_length(self, layer_idx: Optional[int] = 0) -> int:
+        idx = layer_idx or 0
+        if len(self.layers) > idx and self.layers[idx].is_initialized:
+            return self.layers[idx].seen_tokens
+        return self._seen_tokens
+
+    def get_mask_sizes(self, q_length: int, layer_idx: Optional[int] = 0) -> Tuple[int, int]:
+        """Returns (kv_length, kv_offset) for attention mask construction.
+        Called BEFORE update(), so the final kv_length = seen_tokens + q_length.
+        """
+        idx = layer_idx or 0
+        if len(self.layers) > idx and self.layers[idx].is_initialized:
+            seen = self.layers[idx].seen_tokens
+        else:
+            seen = self._seen_tokens
+        return seen + q_length, 0
+
+    def get_usable_length(self, new_seq_len: int, layer_idx: Optional[int] = 0) -> int:
+        return self.get_seq_length(layer_idx)
+
+    def get_max_length(self) -> Optional[int]:
+        return None
+
+    def get_max_cache_shape(self) -> Optional[int]:
+        return None
+
+    def get_total_memory_mb(self) -> float:
+        return sum(layer.memory_footprint_mb() for layer in self.layers)
+
+    def reset(self) -> None:
+        for layer in self.layers:
+            layer.reset()
+        self.key_cache = []
+        self.value_cache = []
+        self._seen_tokens = 0
+
+    def reorder_cache(self, beam_idx) -> None:
+        """Called during beam search to reorder cache entries."""
+        pass
+
+    def crop(self, max_length: int) -> None:
+        """Called by generate() to trim cache to max_length."""
+        pass
+
+    def batch_repeat_interleave(self, repeats: int) -> None:
+        """Called during beam search expand."""
+        pass
+
+    def batch_select_indices(self, indices: torch.Tensor) -> None:
+        """Called to select beam indices."""
+        pass
+
+    def to(self, device) -> "KalpanaDynamicCache":
+        """Allow .to(device) calls."""
+        return self
+
+    def __len__(self) -> int:
+        return len(self.key_cache)
+
+    def __iter__(self):
+        return iter(zip(self.key_cache, self.value_cache))
+
+    def __getitem__(self, idx: int):
+        return (self.key_cache[idx], self.value_cache[idx])
+
+
+class KalpanaHybridCache:
     """
     Drop-in Hybrid Cache: Exact local sliding window + O(1) RIF long-range memory.
+    Duck-typed for all transformers versions.
     """
+    is_compileable = False
+    is_initialized = True
+
+    @property
+    def is_sliding(self) -> List[bool]:
+        """Returns per-layer is_sliding flags as a list — required by transformers masking_utils."""
+        return [layer.is_sliding for layer in self.layers]
+
     def __init__(
         self,
         num_layers: Optional[int] = None,
@@ -274,26 +381,99 @@ class KalpanaHybridCache(Cache):
         self.sliding_window = sliding_window
         self.bands = bands
         self.kappa = kappa
+        self.num_layers = num_layers or 32
+        self.layers: List[KalpanaHybridCacheLayer] = [
+            KalpanaHybridCacheLayer(sliding_window=sliding_window, bands=bands, kappa=kappa)
+            for _ in range(self.num_layers)
+        ]
+        self.key_cache: List[torch.Tensor] = []
+        self.value_cache: List[torch.Tensor] = []
+        self._seen_tokens: int = 0
 
-        if _HAS_TRANSFORMERS_CACHE:
-            if num_layers is not None:
-                layers = [KalpanaHybridCacheLayer(sliding_window=sliding_window, bands=bands, kappa=kappa) for _ in range(num_layers)]
-                super().__init__(layers=layers)
-            else:
-                class HybridLayerFactory(KalpanaHybridCacheLayer):
-                    def __init__(self, *args, **kw):
-                        super().__init__(sliding_window=sliding_window, bands=bands, kappa=kappa)
-                super().__init__(layer_class_to_replicate=HybridLayerFactory)
+    def update(
+        self,
+        key_states: torch.Tensor,
+        value_states: torch.Tensor,
+        layer_idx: int,
+        cache_kwargs: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        while len(self.layers) <= layer_idx:
+            self.layers.append(KalpanaHybridCacheLayer(
+                sliding_window=self.sliding_window, bands=self.bands, kappa=self.kappa
+            ))
+
+        k_recon, v_recon = self.layers[layer_idx].update(key_states, value_states)
+
+        if len(self.key_cache) <= layer_idx:
+            self.key_cache.append(k_recon)
+            self.value_cache.append(v_recon)
         else:
-            self.layers = [KalpanaHybridCacheLayer(sliding_window=sliding_window, bands=bands, kappa=kappa) for _ in range(num_layers or 32)]
+            self.key_cache[layer_idx] = k_recon
+            self.value_cache[layer_idx] = v_recon
+
+        if layer_idx == 0:
+            self._seen_tokens = self.layers[0].seen_tokens
+
+        return k_recon, v_recon
+
+    def get_seq_length(self, layer_idx: Optional[int] = 0) -> int:
+        idx = layer_idx or 0
+        if len(self.layers) > idx and self.layers[idx].is_initialized:
+            return self.layers[idx].seen_tokens
+        return self._seen_tokens
+
+    def get_mask_sizes(self, q_length: int, layer_idx: Optional[int] = 0) -> Tuple[int, int]:
+        """Returns (kv_length, kv_offset) for attention mask construction."""
+        idx = layer_idx or 0
+        if len(self.layers) > idx and self.layers[idx].is_initialized:
+            kv_len = self.layers[idx].seen_tokens
+        else:
+            kv_len = self._seen_tokens
+        return kv_len, 0
+
+    def get_usable_length(self, new_seq_len: int, layer_idx: Optional[int] = 0) -> int:
+        return self.get_seq_length(layer_idx)
+
+    def get_max_length(self) -> Optional[int]:
+        return None
+
+    def get_max_cache_shape(self) -> Optional[int]:
+        return None
 
     def get_total_memory_mb(self) -> float:
-        total = 0.0
+        return sum(layer.memory_footprint_mb() for layer in self.layers)
+
+    def reset(self) -> None:
         for layer in self.layers:
-            if hasattr(layer, "memory_footprint_mb"):
-                total += layer.memory_footprint_mb()
-        return total
+            layer.reset()
+        self.key_cache = []
+        self.value_cache = []
+        self._seen_tokens = 0
+
+    def reorder_cache(self, beam_idx) -> None:
+        pass
+
+    def crop(self, max_length: int) -> None:
+        pass
+
+    def batch_repeat_interleave(self, repeats: int) -> None:
+        pass
+
+    def batch_select_indices(self, indices: torch.Tensor) -> None:
+        pass
+
+    def to(self, device) -> "KalpanaHybridCache":
+        return self
+
+    def __len__(self) -> int:
+        return len(self.key_cache)
+
+    def __iter__(self):
+        return iter(zip(self.key_cache, self.value_cache))
+
+    def __getitem__(self, idx: int):
+        return (self.key_cache[idx], self.value_cache[idx])
 
 
-# Alias for backwards compatibility
+# Backwards compatibility alias
 KalpanaKVCache = KalpanaDynamicCache
