@@ -24,7 +24,7 @@ class KalpanaRIFTensor(nn.Module):
         self,
         batch_size: int = 1,
         num_heads: int = 8,
-        bands: int = 512,
+        bands: int = 2048,
         dim: int = 128,
         kappa: float = 1.0,
         min_freq: float = 0.1,
