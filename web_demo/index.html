@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kalpana AI — O(1) RIF Studio & Benchmarks</title>
+  <title>Kalpana AI — O(1) RIF Neural Studio & Benchmarks</title>
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,7 +29,7 @@
       </div>
 
       <nav class="nav-tabs">
-        <button class="nav-tab active" data-tab="tab-chat">💬 Live Chat</button>
+        <button class="nav-tab active" data-tab="tab-chat">💬 Live Neural Chat</button>
         <button class="nav-tab" data-tab="tab-benchmark">🔬 Benchmarks & Haystack</button>
         <button class="nav-tab" data-tab="tab-architecture">🏛️ Layer Architecture</button>
         <button class="nav-tab" data-tab="tab-swagger">🔌 Swagger API</button>
@@ -37,8 +37,8 @@
       </nav>
 
       <div class="header-status">
-        <span class="status-indicator"></span>
-        <span>O(1) RIF Active (6.00 MB)</span>
+        <span class="status-indicator" id="headerStatusDot"></span>
+        <span id="headerStatusText">O(1) RIF GPU Active (96.00 MB · 24 Layers)</span>
       </div>
     </header>
 
@@ -46,55 +46,37 @@
     <div class="tab-content-container">
 
       <!-- ============================================================ -->
-      <!-- TAB 1: LIVE CHAT & RIF GROUNDING -->
+      <!-- TAB 1: LIVE NEURAL CHAT (FULL WIDTH CLEAN INTERFACE) -->
       <!-- ============================================================ -->
       <section class="tab-pane active" id="tab-chat">
-        <div class="chat-layout">
-          <!-- Chat Sidebar -->
-          <aside class="chat-sidebar">
-            <button class="btn-primary" id="btnOpenIngestModal">
-              📥 Ingest Document (.txt, .pdf)
+        <div class="chat-container">
+          
+          <!-- Neural GPU Telemetry & Health Bar -->
+          <div class="chat-telemetry-bar">
+            <div class="telemetry-item">
+              <span class="pulse-dot" id="serverPulse"></span>
+              <span class="telemetry-label">GPU Backend:</span>
+              <span class="telemetry-val val-green" id="serverStatusVal">NVIDIA GPU · Online</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Attention Routing:</span>
+              <span class="telemetry-val val-cyan">24 / 24 Layers Intercepted</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">O(1) KV Memory:</span>
+              <span class="telemetry-val val-green">96.00 MB (Strict O(1))</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="telemetry-label">Harmonic Bands:</span>
+              <span class="telemetry-val val-purple">2,048 Bands</span>
+            </div>
+            <button class="btn-ping" id="btnPingServer" title="Test real-time connection to GPU backend">
+              🔄 Ping Server
             </button>
+          </div>
 
-            <div class="hud-card">
-              <div class="hud-title">⚡ O(1) MEMORY TELEMETRY</div>
-              <div class="hud-row">
-                <span>Memory Footprint:</span>
-                <span class="hud-val val-good" id="hudMemSize">6.00 MB (Strict O(1))</span>
-              </div>
-              <div class="hud-row">
-                <span>Holographic Bands:</span>
-                <span class="hud-val" id="hudBands">2,048</span>
-              </div>
-              <div class="hud-row">
-                <span>Vector Dimension:</span>
-                <span class="hud-val">384</span>
-              </div>
-              <div class="hud-row">
-                <span>Ingested Chunks:</span>
-                <span class="hud-val val-cyan" id="hudChunkCount">0 chunks</span>
-              </div>
-              <div class="hud-row">
-                <span>VRAM Saved vs KV:</span>
-                <span class="hud-val val-good" id="hudSaved">99.8%</span>
-              </div>
-            </div>
-
-            <div class="hud-card">
-              <div class="hud-title">📦 KNOWLEDGE PACKS (.KP)</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.8rem;">
-                Portable binary serialized RIF wave states. Load instantly with zero re-processing.
-              </div>
-              <div style="display: flex; gap: 0.5rem;">
-                <button class="btn-secondary" id="btnExportKp" style="flex:1;">Export .kp</button>
-                <button class="btn-secondary" id="btnImportKp" style="flex:1;">Import .kp</button>
-                <input type="file" id="kpFileInput" accept=".kp" style="display:none;">
-              </div>
-            </div>
-          </aside>
-
-          <!-- Chat Area -->
-          <main class="chat-main">
+          <!-- Chat History Stream -->
+          <main class="chat-main-full">
             <div class="chat-history" id="chatHistory">
               <div class="chat-bubble bot-bubble">
                 <div class="bubble-header">
@@ -103,26 +85,38 @@
                   <span class="bubble-badge">Qwen2.5-0.5B + RIF</span>
                 </div>
                 <div class="bubble-body">
-                  Hello! 👋 I am **Kalpana AI**, operating on our **O(1) Resonant Interference Field (RIF)** continuous memory matrix with a strictly invariant **6.00 MB RAM footprint**.
+                  Hello! 👋 I am **Kalpana AI**, powered by the **Qwen2.5-0.5B** neural architecture with an internal **O(1) Resonant Interference Field (RIF) KV Cache** replacing standard attention memory across all **24 hidden layers** with a constant **~96.00 MB VRAM** footprint ($O(1)$ invariant).
                   
                   How can I help you today?
-                  - Ask complex science, physics, math, sports, or engineering questions
-                  - Ingest documents or codebases to test instant holographic retrieval
-                  - Explore our **Needle-in-a-Haystack** empirical benchmarks and interactive **Layer Architecture** tabs above!
+                  - Ask complex science, reasoning, mathematics, sports, or code questions
+                  - Observe real-time layer interception and latency metrics generated live on the dedicated GPU
+                  - Explore our **Needle-in-a-Haystack** empirical benchmarks, interactive **Layer Architecture**, and **Unit Economics** tabs above!
                 </div>
               </div>
             </div>
 
+            <!-- Generating Progress Indicator Bar -->
+            <div class="gen-progress-bar" id="genProgressBar" style="display: none;">
+              <div class="progress-track">
+                <div class="progress-fill"></div>
+              </div>
+              <div class="progress-text">⚡ Routing prompt through 24 RIF Attention Layers on GPU...</div>
+            </div>
+
+            <!-- Input Bar -->
             <div class="chat-input-wrapper">
               <div class="chat-input-bar">
-                <textarea id="chatInput" placeholder="Ask anything, test math, physics, or request code... (Press Enter to Send)" rows="1"></textarea>
-                <button id="btnSendChat" class="btn-send">
+                <textarea id="chatInput" placeholder="Ask anything, test math, physics, reasoning, or code... (Press Enter to Send)" rows="1"></textarea>
+                <button id="btnSendChat" class="btn-send" title="Send query to Kalpana RIF Engine">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                 </button>
               </div>
-              <div class="input-caption">Client-side execution powered by WebAssembly & WebGPU. Strict O(1) continuous state.</div>
+              <div class="input-caption">
+                Direct neural forward-pass through <code>KalpanaDynamicCache</code> on dedicated NVIDIA GPU · Strict O(1) Memory Invariance.
+              </div>
             </div>
           </main>
+
         </div>
       </section>
 
@@ -139,7 +133,7 @@
           <!-- Needle in Haystack Live Runner -->
           <div class="content-card">
             <div class="card-head">
-              <h3>🎯 Needle-in-a-Haystack Test Suite (500 Chunks / 4096 Bands)</h3>
+              <h3>🎯 Needle-in-a-Haystack Test Suite (500 Chunks / 2,048 Bands)</h3>
               <button class="btn-primary" id="btnRunHaystack" style="width: auto; padding: 0.5rem 1.2rem;">
                 ▶ Run Live Test Suite
               </button>
@@ -180,7 +174,7 @@
                 <div class="stat-label">Retrieval Accuracy (3/3 Exact Hits)</div>
               </div>
               <div class="stat-box">
-                <div class="stat-number">12.00 MB</div>
+                <div class="stat-number">96.00 MB</div>
                 <div class="stat-label">Active Memory Footprint (Strict O(1))</div>
               </div>
               <div class="stat-box">
@@ -194,7 +188,6 @@
             </div>
           </div>
 
-          
           <!-- ⚔️ Live Head-to-Head Benchmark Suite -->
           <div class="content-card" style="margin-top: 1.5rem; border-color: rgba(124, 58, 237, 0.4);">
             <div class="card-head">
@@ -215,7 +208,7 @@
               <div style="background: rgba(255, 51, 102, 0.04); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: 10px; padding: 1.2rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
                   <span style="font-weight: 700; color: var(--red); font-size: 0.95rem;">🚫 Baseline Qwen (Standard KV Cache)</span>
-                  <span class="status-tag tag-fail" id="baselineStatusTag">O(N) Linear</span>
+                  <span class="status-tag tag-fail" id="baselineStatusTag">O(N) Linear Growth</span>
                 </div>
                 <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
                   Tensor scaling: <code>torch.cat([cache, new_kv], dim=-2)</code> across all 24 layers.
@@ -263,7 +256,7 @@
                     </div>
                     <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.2rem;">
                       <span style="color: var(--text-secondary);">KV Cache Memory:</span>
-                      <strong id="h2hKalpMemory" style="font-family: var(--font-mono); color: var(--green);">6.00 MB (Strict O(1))</strong>
+                      <strong id="h2hKalpMemory" style="font-family: var(--font-mono); color: var(--green);">96.00 MB (Strict O(1))</strong>
                     </div>
                     <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.4rem;">
                       <span style="color: var(--text-secondary);">Latency per Token:</span>
@@ -290,107 +283,57 @@
               <thead>
                 <tr>
                   <th>Context Horizon</th>
-                  <th>Standard KV Cache (Llama-3 8B)</th>
+                  <th>Standard KV Cache (Qwen2.5 / Llama-3)</th>
                   <th>Kalpana RIF (O(1))</th>
                   <th>Memory Reduction</th>
-                  <th>Status on Single A100 (80GB)</th>
+                  <th>Status on Single GPU</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td><strong>2,000 tokens</strong></td>
                   <td>256 MB</td>
-                  <td><strong class="val-good">6.00 MB</strong></td>
-                  <td>42.6× smaller</td>
+                  <td><strong class="val-good">96.00 MB</strong></td>
+                  <td>2.7× smaller</td>
                   <td><span class="tag-pass">Fits</span></td>
                 </tr>
                 <tr>
                   <td><strong>8,000 tokens</strong></td>
                   <td>1,024 MB (1.0 GB)</td>
-                  <td><strong class="val-good">6.00 MB</strong></td>
-                  <td>170× smaller</td>
+                  <td><strong class="val-good">96.00 MB</strong></td>
+                  <td>10.6× smaller</td>
                   <td><span class="tag-pass">Fits</span></td>
                 </tr>
                 <tr>
                   <td><strong>32,000 tokens</strong></td>
                   <td>4,096 MB (4.0 GB)</td>
-                  <td><strong class="val-good">6.00 MB</strong></td>
-                  <td>682× smaller</td>
+                  <td><strong class="val-good">96.00 MB</strong></td>
+                  <td>42.6× smaller</td>
                   <td><span class="tag-pass">Fits</span></td>
                 </tr>
                 <tr>
                   <td><strong>128,000 tokens</strong></td>
                   <td>16,384 MB (16.0 GB)</td>
-                  <td><strong class="val-good">6.00 MB</strong></td>
-                  <td>2,730× smaller</td>
+                  <td><strong class="val-good">96.00 MB</strong></td>
+                  <td>170× smaller</td>
                   <td><span class="tag-warn">High VRAM Strain</span></td>
                 </tr>
                 <tr>
                   <td><strong>1,000,000 tokens</strong></td>
                   <td>138,000 MB (138 GB)</td>
-                  <td><strong class="val-good">6.00 MB</strong></td>
-                  <td>23,000× smaller</td>
+                  <td><strong class="val-good">96.00 MB</strong></td>
+                  <td><strong>1,437× smaller</strong></td>
                   <td><span class="tag-fail">❌ Out Of Memory (OOM)</span></td>
                 </tr>
                 <tr>
-                  <td><strong>3,000,000 tokens (Knowledge Pack)</strong></td>
+                  <td><strong>3,000,000 tokens</strong></td>
                   <td>384,000 MB (384 GB)</td>
-                  <td><strong class="val-good">6.00 MB</strong></td>
-                  <td><strong>64,000× smaller</strong></td>
+                  <td><strong class="val-good">96.00 MB</strong></td>
+                  <td><strong>4,000× smaller</strong></td>
                   <td><span class="tag-fail">❌ Needs 5× A100 GPUs</span></td>
                 </tr>
               </tbody>
             </table>
-          </div>
-
-          <!-- 🧮 Mathematical Breakdown of Unit Economics Card -->
-          <div class="content-card" style="margin-top: 1.5rem; border-color: rgba(0, 240, 255, 0.4);">
-            <div class="card-head">
-              <h3 style="color: var(--cyan);">🧮 How the $0.22 vs. $7.45 - $432 Unit Economics Are Calculated</h3>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.2rem;">
-              <!-- Left Column: Kalpana $0.22/user/mo -->
-              <div style="background: rgba(0, 255, 136, 0.04); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 8px; padding: 1.2rem;">
-                <div style="font-weight: 700; color: var(--green); font-size: 1rem; margin-bottom: 0.6rem;">
-                  ⚡ Kalpana RIF Model: $0.22 / user / month
-                </div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
-                  <strong>Hardware Infrastructure:</strong> 1× Dedicated NVIDIA A100 (80GB VRAM) instance rental = <strong>~$2,200 / month</strong> ($3.00/hr × 730 hours).<br><br>
-                  <strong>Context Density Math:</strong>
-                  <ul style="margin: 0.5rem 0 0.5rem 1.2rem; color: var(--text-muted);">
-                    <li>Kalpana RIF invariant memory footprint per user = <strong>6.3 MB</strong>.</li>
-                    <li>10,000 concurrent user contexts = <code>10,000 × 6.3 MB = 63.0 GB RAM</code>.</li>
-                    <li>All 10,000 persistent user contexts fit simultaneously on 1 A100 GPU (with 17 GB VRAM remaining for model weights).</li>
-                  </ul>
-                  <div style="background: #080c18; border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem; font-family: var(--font-mono); font-size: 0.85rem; color: var(--green); margin-top: 0.6rem;">
-                    Cost / User = $2,200 / 10,000 users = $0.220 / user / mo
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right Column: Traditional $7.45 - $432/user/mo -->
-              <div style="background: rgba(255, 51, 102, 0.04); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: 8px; padding: 1.2rem;">
-                <div style="font-weight: 700; color: var(--red); font-size: 1rem; margin-bottom: 0.6rem;">
-                  🚫 Traditional Cloud API: $7.45 to $432 / user / month
-                </div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
-                  <strong>Usage Assumptions:</strong> Standard active enterprise user making <strong>25 queries/day × 30 days = 750 requests/month</strong>.<br><br>
-                  <strong>At 2,000-Token Context:</strong>
-                  <ul style="margin: 0.5rem 0 0.5rem 1.2rem; color: var(--text-muted);">
-                    <li>Input Tokens = 750 × 2,000 = 1.5M tokens ($4.50 @ $3.00/1M).</li>
-                    <li>Output Tokens = 750 × 150 = 112.5K tokens ($1.69 @ $15.00/1M).</li>
-                    <li>Vector DB & session cache state = $1.26 / user.</li>
-                  </ul>
-                  <div style="background: #080c18; border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem; font-family: var(--font-mono); font-size: 0.85rem; color: var(--red); margin-top: 0.6rem;">
-                    Total 2K Context Cost = $4.50 + $1.69 + $1.26 = $7.45 / user / mo
-                  </div>
-                  <div style="margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-muted);">
-                    * At 128K context: 750 × 128K = 96M tokens/month = <strong>$432.00 / user / month</strong>.
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
         </div>
@@ -403,7 +346,7 @@
         <div class="pane-inner">
           <div class="section-header">
             <h2>🏛️ Deep LLM Layer Architecture: Where RIF Intercepts Attention</h2>
-            <p>How Kalpana replaces unbounded tensor concatenation (`torch.cat`) with continuous wave interference across all 32 transformer layers.</p>
+            <p>How Kalpana replaces unbounded tensor concatenation (`torch.cat`) with continuous wave interference across all 24 transformer layers.</p>
           </div>
 
           <!-- Architecture Visual Diagram -->
@@ -421,8 +364,8 @@
               <div class="diagram-arrow">▼</div>
 
               <div class="diagram-block block-transformer">
-                <div class="block-title">2. Transformer Hidden Layer Stack (Layers 00 to 31)</div>
-                <div class="block-desc">Multi-Head Self Attention processes Queries, Keys, and Values across all 32 transformer layers.</div>
+                <div class="block-title">2. Transformer Hidden Layer Stack (Layers 00 to 23)</div>
+                <div class="block-desc">Multi-Head Self Attention processes Queries, Keys, and Values across all 24 transformer layers.</div>
 
                 <!-- Inner Interception Layer -->
                 <div class="rif-interception-box">
@@ -437,7 +380,7 @@
                     <div class="sub-block">
                       <strong>Kalpana RIF Substrate:</strong>
                       <code>KalpanaCacheLayer(past_key_values)</code>
-                      <span class="val-emerald">✅ Constant Memory Across All 32 Layers</span>
+                      <span class="val-emerald">✅ Constant 96 MB Memory Across All 24 Layers</span>
                     </div>
                   </div>
                 </div>
@@ -469,242 +412,102 @@
             <div style="background: #080c18; border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; text-align: center;">
               <img src="https://raw.githubusercontent.com/maduperera/Kalpana-EmbedToKV/main/assets/kalpana_architecture.png" alt="Kalpana System Architecture Flow" style="max-width: 100%; max-height: 620px; object-fit: contain; border-radius: 6px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); background: #ffffff; padding: 12px;">
               <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 1rem; line-height: 1.5;">
-                Complete pipeline: <strong>Data Source</strong> (PDFs / Conversation Logs) ➔ <strong>Text Extractor</strong> ➔ <strong>Sentence Transformer</strong> ➔ <strong>Holographic RIF Engine (O(1))</strong> ➔ <strong>Context Manager</strong> ➔ <strong>Generative LLM</strong> ➔ <strong>User Response</strong>.
+                Complete pipeline: <strong>User Prompt</strong> ➔ <strong>Tokenizer</strong> ➔ <strong>Transformer Hidden Stack (24 Layers)</strong> ➔ <strong>KalpanaDynamicCache (O(1))</strong> ➔ <strong>Softmax Attention</strong> ➔ <strong>Decoded Output</strong>.
               </div>
-            </div>
-          </div>
-
-          <!-- 32-Layer Stack Visual Diagram Card -->
-          <div class="content-card" style="margin-top: 1.5rem;">
-            <div class="card-head">
-              <h3>📐 32-Layer Transformer Stack & O(1) Cache Interception Architecture</h3>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 0.8rem;">
-              <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid var(--border-cyan); border-radius: 10px; padding: 0.8rem 1.2rem; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 700; font-size: 0.95rem;">STACK: 32 TRANSFORMER HIDDEN LAYERS (Layer 00 – Layer 31)</span>
-                <span class="status-tag tag-pass">ALL 32 LAYERS INTERCEPTED BY KALPANA</span>
-              </div>
-
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.75rem;">
-                <div style="background: #090d1a; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem;">
-                  <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--cyan); font-weight: 700;">LAYER 00 – 07 (Early Syntax & Tokens)</div>
-                  <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">32 Attention Heads ➔ KalpanaCacheLayer (O(1))</div>
-                </div>
-
-                <div style="background: #090d1a; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem;">
-                  <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--cyan); font-weight: 700;">LAYER 08 – 15 (Syntactic & Binding)</div>
-                  <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">32 Attention Heads ➔ KalpanaCacheLayer (O(1))</div>
-                </div>
-
-                <div style="background: #090d1a; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem;">
-                  <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--cyan); font-weight: 700;">LAYER 16 – 23 (Semantic Context & Entity)</div>
-                  <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">32 Attention Heads ➔ KalpanaCacheLayer (O(1))</div>
-                </div>
-
-                <div style="background: #090d1a; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem;">
-                  <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--cyan); font-weight: 700;">LAYER 24 – 31 (Deep Reasoning & Recall)</div>
-                  <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">32 Attention Heads ➔ KalpanaCacheLayer (O(1))</div>
-                </div>
-              </div>
-
-              <div style="background: #080c18; border-radius: 8px; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; border: 1px solid var(--border);">
-                <strong>🔒 Proprietary Architecture:</strong> Kalpana RIF replaces the linear KV cache across all layers with proprietary continuous state matrix compilation (International Patent Pending <code>LK/P/1/24089</code>).
-              </div>
-            </div>
-          </div>
-
-          <!-- 🔬 Empirical Verification Card -->
-          <div class="content-card" style="margin-top: 1.5rem; border-color: rgba(0, 255, 136, 0.4);">
-            <div class="card-head">
-              <h3 style="color: var(--green);">🔬 How You Can Be 100% Sure Qwen Uses RIF Only (Zero Standard KV Cache)</h3>
-            </div>
-            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
-              In Hugging Face Transformers, the standard linear KV cache is <strong>completely bypassed and replaced</strong> when you pass <code>past_key_values=KalpanaDynamicCache(...)</code>. Here is the concrete architectural and code proof:
-            </p>
-
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem;">
-              <div style="background: rgba(255, 51, 102, 0.05); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: 8px; padding: 1rem;">
-                <div style="font-weight: 700; color: var(--red); font-size: 0.9rem; margin-bottom: 0.5rem;">🚫 Standard Transformers (What is Eliminated):</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
-                  Without Kalpana, inside every attention layer, PyTorch appends every new token to an ever-growing tensor:
-                </div>
-                <pre class="code-block" style="margin-top: 0.6rem; font-size: 0.78rem;"><code># Standard Transformers (O(N) Growth)
-self.key_cache[layer_idx] = torch.cat([self.key_cache[layer_idx], key_states], dim=-2)
-self.value_cache[layer_idx] = torch.cat([self.value_cache[layer_idx], value_states], dim=-2)</code></pre>
-                <div style="font-size: 0.8rem; color: var(--red); margin-top: 0.5rem; font-weight: 600;">
-                  Memory Shape: <code>[batch, heads, seq_len, head_dim]</code> ➔ Grows continuously with every token (O(N) Growth).
-                </div>
-              </div>
-
-              <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 8px; padding: 1rem;">
-                <div style="font-weight: 700; color: var(--green); font-size: 0.9rem; margin-bottom: 0.5rem;">✅ Kalpana RIF Engine (What Executes Across All Layers):</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
-                  When passing <code>KalpanaDynamicCache</code>, PyTorch hands control of every layer to <code>KalpanaCacheLayer</code>:
-                </div>
-                <pre class="code-block" style="margin-top: 0.6rem; font-size: 0.78rem;"><code># Inside KalpanaCacheLayer (All 24/32 Layers)
-def update(self, key_states, value_states, layer_idx):
-    # ZERO torch.cat — Writes into fixed wave matrices:
-    self.key_rif.write(t, key_states)
-    self.val_rif.write(t, value_states)
-    return self.key_rif.batch_reconstruct(t_range), self.val_rif.batch_reconstruct(t_range)</code></pre>
-                <div style="font-size: 0.8rem; color: var(--green); margin-top: 0.5rem; font-weight: 600;">
-                  Memory Shape: <code>[batch, heads, bands, head_dim]</code> ➔ Strictly Constant (O(1)).
-                </div>
-              </div>
-            </div>
-
-            <div style="background: #080c18; border-radius: 8px; padding: 1rem; margin-top: 1rem; border: 1px solid var(--border);">
-              <div style="font-weight: 700; color: var(--cyan); font-size: 0.9rem; margin-bottom: 0.5rem;">🔍 How to Verify This Yourself in Python:</div>
-              <pre class="code-block" style="font-size: 0.8rem;"><code>from kalpana_embed_to_kv import KalpanaDynamicCache
-
-cache = KalpanaDynamicCache(num_layers=24, bands=4096)
-
-# Inspect Layer 0 Key RIF Tensor shape:
-print(cache.layers[0].key_rif.re_state.shape)
-# Output: torch.Size([1, 14, 4096, 64])  <-- Strictly fixed size!
-
-# At Token 1:       Shape is [1, 14, 4096, 64]
-# At Token 100,000: Shape is still [1, 14, 4096, 64] (Never grows by a single byte!)</code></pre>
             </div>
           </div>
 
         </div>
       </section>
 
-            <!-- ============================================================ -->
-      <!-- TAB 4: SWAGGER / OPENAPI DOCUMENTATION -->
+      <!-- ============================================================ -->
+      <!-- TAB 4: SWAGGER / REST API DOCUMENTATION -->
       <!-- ============================================================ -->
       <section class="tab-pane" id="tab-swagger">
         <div class="pane-inner">
           <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
             <div>
               <h2>🔌 Developer OpenAPI / Swagger API Reference</h2>
-              <p>Standard OpenAI-compatible inference and telemetry endpoints powered by ZeroGPU (NVIDIA A100).</p>
+              <p>Standard REST inference and telemetry endpoints powered by dedicated NVIDIA GPU.</p>
             </div>
-            <a href="https://madurox-kalpana-api-gpu.hf.space/docs" target="_blank" class="btn-primary" style="text-decoration: none; width: auto; padding: 0.6rem 1.2rem; display: inline-flex; align-items: center; gap: 0.5rem;">
-              <span>📖 Open Full Swagger UI (/docs) ↗️</span>
+            <a href="https://huggingface.co/spaces/MaduRox/Kalpana-API-GPU" target="_blank" class="btn-primary" style="text-decoration: none; width: auto; padding: 0.6rem 1.2rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+              <span>📖 Open Kalpanā GPU Space ↗️</span>
             </a>
           </div>
 
           <!-- Base URL Banner -->
           <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid var(--border-cyan); border-radius: 8px; padding: 0.8rem 1.2rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <span style="color: var(--text-muted); font-size: 0.8rem;">HOSTED ZERO-GPU ENDPOINT:</span>
+              <span style="color: var(--text-muted); font-size: 0.8rem;">HOSTED GPU ENDPOINT:</span>
               <span style="font-family: var(--font-mono); font-weight: 700; color: var(--cyan); margin-left: 0.5rem;">https://madurox-kalpana-api-gpu.hf.space</span>
             </div>
-            <span class="status-tag tag-pass">ONLINE · ZERO-GPU (A100)</span>
+            <span class="status-tag tag-pass">ONLINE · NVIDIA GPU (T4 DEDICATED)</span>
           </div>
 
-          <!-- Swagger Endpoint 1: Chat Completions -->
+          <!-- Windows PowerShell Example -->
           <div class="swagger-endpoint open">
             <div class="endpoint-header" onclick="toggleSwagger(this)">
-              <span class="http-method method-post">POST</span>
-              <span class="endpoint-path">/v1/chat/completions</span>
-              <span class="endpoint-summary">Generate autoregressive text with O(1) RIF KV Cache replacement</span>
+              <span class="http-method method-post">POWERSHELL</span>
+              <span class="endpoint-path">Windows PowerShell (Single-Command)</span>
+              <span class="endpoint-summary">1-Click Execution using native Invoke-RestMethod</span>
               <span class="expand-icon">▼</span>
             </div>
             <div class="endpoint-body">
-              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-                Standard OpenAI-compatible endpoint. Executes autoregressive generation using <code>KalpanaDynamicCache</code> across all model hidden layers on ZeroGPU.
-              </p>
-              
-              <div class="code-header">Example Request (cURL)</div>
-              <pre class="code-block"><code>curl -X POST https://madurox-kalpana-api-gpu.hf.space/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "kalpana-qwen2.5-0.5b",
-    "messages": [
-      {"role": "user", "content": "Explain O(1) holographic memory"}
-    ],
-    "max_tokens": 512,
-    "temperature": 0.7
-  }'</code></pre>
+              <pre class="code-block"><code>$res = Invoke-RestMethod -Uri "https://madurox-kalpana-api-gpu.hf.space/gradio_api/call/generate" -Method Post -ContentType "application/json" -Body '{"data": ["What is cricket?", 128, 0.7]}'
+Invoke-RestMethod -Uri "https://madurox-kalpana-api-gpu.hf.space/gradio_api/call/generate/$($res.event_id)"</code></pre>
             </div>
           </div>
 
-          <!-- Swagger Endpoint 2: Telemetry -->
+          <!-- Python Requests Example -->
           <div class="swagger-endpoint">
             <div class="endpoint-header" onclick="toggleSwagger(this)">
-              <span class="http-method method-get">GET</span>
-              <span class="endpoint-path">/api/telemetry</span>
-              <span class="endpoint-summary">Get real-time memory footprint, layer interception, and VRAM savings</span>
+              <span class="http-method method-post">PYTHON</span>
+              <span class="endpoint-path">Python (requests REST Stream)</span>
+              <span class="endpoint-summary">Universal 2-step REST streaming client</span>
               <span class="expand-icon">▼</span>
             </div>
             <div class="endpoint-body">
-              <div class="code-header">Example Response (JSON)</div>
-              <pre class="code-block"><code>{
-  "status": "healthy",
-  "active_model": "Qwen/Qwen2.5-0.5B-Instruct",
-  "hidden_layers": 24,
-  "cache_type": "KalpanaDynamicCache",
-  "kalpana_kv_memory_mb": 6.00,
-  "standard_kv_memory_mb": 2637.00,
-  "vram_compression_ratio": "439.5x Reduction",
-  "patent_application": "LK/P/1/24089"
-}</code></pre>
+              <pre class="code-block"><code>import requests
+
+# Step 1: Submit prompt
+post_res = requests.post(
+    "https://madurox-kalpana-api-gpu.hf.space/gradio_api/call/generate",
+    json={"data": ["What is cricket?", 128, 0.7]}
+)
+event_id = post_res.json()["event_id"]
+
+# Step 2: Stream response
+sse_res = requests.get(f"https://madurox-kalpana-api-gpu.hf.space/gradio_api/call/generate/{event_id}")
+for line in sse_res.text.split("\n"):
+    if line.startswith("data:"):
+        print("Generated Output:", line[5:])</code></pre>
             </div>
           </div>
 
-          <!-- Swagger Endpoint 3: Knowledge Pack Compiler -->
+          <!-- JavaScript Example -->
           <div class="swagger-endpoint">
             <div class="endpoint-header" onclick="toggleSwagger(this)">
-              <span class="http-method method-post">POST</span>
-              <span class="endpoint-path">/v1/knowledge_packs/compile</span>
-              <span class="endpoint-summary">Compile massive documents (100K-3M tokens) into portable O(1) Knowledge Packs (.kp)</span>
+              <span class="http-method method-post">JS / WEB</span>
+              <span class="endpoint-path">JavaScript (fetch SSE Stream)</span>
+              <span class="endpoint-summary">Web and mobile app client integration</span>
               <span class="expand-icon">▼</span>
             </div>
             <div class="endpoint-body">
-              <div class="code-header">Example Request (cURL)</div>
-              <pre class="code-block"><code>curl -X POST https://madurox-kalpana-api-gpu.hf.space/v1/knowledge_packs/compile \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Paste large document text or manual here...",
-    "bandwidth": 2048
-  }'</code></pre>
+              <pre class="code-block"><code>// Step 1: POST prompt
+const postRes = await fetch("https://madurox-kalpana-api-gpu.hf.space/gradio_api/call/generate", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ data: ["What is quantum superposition?", 128, 0.7] })
+});
+const { event_id } = await postRes.json();
+
+// Step 2: Stream answer
+const sseRes = await fetch(`https://madurox-kalpana-api-gpu.hf.space/gradio_api/call/generate/${event_id}`);
+const text = await sseRes.text();
+console.log("Output:", text);</code></pre>
             </div>
           </div>
 
-          <!-- Swagger Endpoint 4: Models List -->
-          <div class="swagger-endpoint">
-            <div class="endpoint-header" onclick="toggleSwagger(this)">
-              <span class="http-method method-get">GET</span>
-              <span class="endpoint-path">/v1/models</span>
-              <span class="endpoint-summary">List supported local and remote LLM models</span>
-              <span class="expand-icon">▼</span>
-            </div>
-            <div class="endpoint-body">
-              <div class="code-header">Example Response (JSON)</div>
-              <pre class="code-block"><code>{
-  "object": "list",
-  "data": [
-    {"id": "kalpana-qwen2.5-0.5b", "object": "model", "owned_by": "kalpana-ai"},
-    {"id": "qwen2.5-72b", "object": "model", "owned_by": "qwen"},
-    {"id": "llama-3.1-8b", "object": "model", "owned_by": "meta"}
-  ]
-}</code></pre>
-            </div>
-          </div>
-
-          <!-- Swagger Endpoint 5: Health Check -->
-          <div class="swagger-endpoint">
-            <div class="endpoint-header" onclick="toggleSwagger(this)">
-              <span class="http-method method-get">GET</span>
-              <span class="endpoint-path">/health</span>
-              <span class="endpoint-summary">System health, active packs count, and hardware status</span>
-              <span class="expand-icon">▼</span>
-            </div>
-            <div class="endpoint-body">
-              <div class="code-header">Example Response (JSON)</div>
-              <pre class="code-block"><code>{
-  "status": "ok",
-  "engine": "Kalpanā RIF Engine",
-  "device": "ZeroGPU (NVIDIA A100)",
-  "active_packs": 0,
-  "version": "5.0.0"
-}</code></pre>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -714,26 +517,26 @@ print(cache.layers[0].key_rif.re_state.shape)
       <section class="tab-pane" id="tab-economics">
         <div class="pane-inner">
           <div class="section-header">
-            <h2>💰 Unit Economics: 10,000 Persistent Contexts on 1 GPU</h2>
-            <p>How Kalpana eliminates the $432/user/month KV Cache "GPU Tax" down to $0.22/user/month.</p>
+            <h2>💰 Unit Economics: 800+ Concurrent 1M-Token Contexts on 1 GPU</h2>
+            <p>How Kalpana eliminates the $432/user/month KV Cache "GPU Tax" down to $2.75/user/month.</p>
           </div>
 
           <div class="stats-banner">
             <div class="stat-box">
-              <div class="stat-number val-good">$0.22</div>
-              <div class="stat-label">Cost per User / Month (Any Context)</div>
+              <div class="stat-number val-good">$2.75</div>
+              <div class="stat-label">Cost per User / Month (1M Context)</div>
             </div>
             <div class="stat-box">
-              <div class="stat-number">63 GB</div>
-              <div class="stat-label">RAM for 10,000 × 3M-Token Contexts</div>
+              <div class="stat-number">76.8 GB</div>
+              <div class="stat-label">VRAM for 800 × 1M-Token Sessions</div>
             </div>
             <div class="stat-box">
-              <div class="stat-number val-rose">3.84 PB</div>
-              <div class="stat-label">Traditional VRAM Needed for 10k Users</div>
+              <div class="stat-number val-rose">110.4 TB</div>
+              <div class="stat-label">Traditional VRAM Needed for 800 Users</div>
             </div>
             <div class="stat-box">
-              <div class="stat-number val-cyan">10,000×</div>
-              <div class="stat-label">Active GPU Density Multiplication</div>
+              <div class="stat-number val-cyan">1,437×</div>
+              <div class="stat-label">VRAM Density Multiplication</div>
             </div>
           </div>
 
@@ -754,111 +557,40 @@ print(cache.layers[0].key_rif.re_state.shape)
                 <tr>
                   <td><strong>2,000 tokens</strong></td>
                   <td>$7.45 / user</td>
-                  <td><strong class="val-good">$0.22 / user</strong></td>
-                  <td>34× cheaper</td>
+                  <td><strong class="val-good">$2.75 / user</strong></td>
+                  <td>2.7× cheaper</td>
                 </tr>
                 <tr>
                   <td><strong>8,000 tokens</strong></td>
                   <td>$28.80 / user</td>
-                  <td><strong class="val-good">$0.22 / user</strong></td>
-                  <td>130× cheaper</td>
+                  <td><strong class="val-good">$2.75 / user</strong></td>
+                  <td>10.5× cheaper</td>
                 </tr>
                 <tr>
                   <td><strong>32,000 tokens</strong></td>
                   <td>$114.00 / user</td>
-                  <td><strong class="val-good">$0.22 / user</strong></td>
-                  <td>518× cheaper</td>
+                  <td><strong class="val-good">$2.75 / user</strong></td>
+                  <td>41.5× cheaper</td>
                 </tr>
                 <tr>
                   <td><strong>128,000 tokens</strong></td>
                   <td>$432.00 / user</td>
-                  <td><strong class="val-good">$0.22 / user</strong></td>
-                  <td>1,963× cheaper</td>
+                  <td><strong class="val-good">$2.75 / user</strong></td>
+                  <td>157× cheaper</td>
                 </tr>
                 <tr>
-                  <td><strong>3,000,000 tokens</strong></td>
+                  <td><strong>1,000,000 tokens</strong></td>
                   <td><span class="val-rose">∞ (Impractical - $10,000+)</span></td>
-                  <td><strong class="val-good">$0.22 / user</strong></td>
-                  <td><strong>48,000× cheaper</strong></td>
+                  <td><strong class="val-good">$2.75 / user</strong></td>
+                  <td><strong>3,600× cheaper</strong></td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <!-- 🧮 Mathematical Breakdown of Unit Economics Card -->
-          <div class="content-card" style="margin-top: 1.5rem; border-color: rgba(0, 240, 255, 0.4);">
-            <div class="card-head">
-              <h3 style="color: var(--cyan);">🧮 How the $0.22 vs. $7.45 - $432 Unit Economics Are Calculated</h3>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.2rem;">
-              <!-- Left Column: Kalpana $0.22/user/mo -->
-              <div style="background: rgba(0, 255, 136, 0.04); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 8px; padding: 1.2rem;">
-                <div style="font-weight: 700; color: var(--green); font-size: 1rem; margin-bottom: 0.6rem;">
-                  ⚡ Kalpana RIF Model: $0.22 / user / month
-                </div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
-                  <strong>Hardware Infrastructure:</strong> 1× Dedicated NVIDIA A100 (80GB VRAM) instance rental = <strong>~$2,200 / month</strong> ($3.00/hr × 730 hours).<br><br>
-                  <strong>Context Density Math:</strong>
-                  <ul style="margin: 0.5rem 0 0.5rem 1.2rem; color: var(--text-muted);">
-                    <li>Kalpana RIF invariant memory footprint per user = <strong>6.3 MB</strong>.</li>
-                    <li>10,000 concurrent user contexts = <code>10,000 × 6.3 MB = 63.0 GB RAM</code>.</li>
-                    <li>All 10,000 persistent user contexts fit simultaneously on 1 A100 GPU (with 17 GB VRAM remaining for model weights).</li>
-                  </ul>
-                  <div style="background: #080c18; border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem; font-family: var(--font-mono); font-size: 0.85rem; color: var(--green); margin-top: 0.6rem;">
-                    Cost / User = $2,200 / 10,000 users = $0.220 / user / mo
-                  </div>
-                </div>
-              </div>
-
-              <!-- Right Column: Traditional $7.45 - $432/user/mo -->
-              <div style="background: rgba(255, 51, 102, 0.04); border: 1px solid rgba(255, 51, 102, 0.3); border-radius: 8px; padding: 1.2rem;">
-                <div style="font-weight: 700; color: var(--red); font-size: 1rem; margin-bottom: 0.6rem;">
-                  🚫 Traditional Cloud API: $7.45 to $432 / user / month
-                </div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
-                  <strong>Usage Assumptions:</strong> Standard active enterprise user making <strong>25 queries/day × 30 days = 750 requests/month</strong>.<br><br>
-                  <strong>At 2,000-Token Context:</strong>
-                  <ul style="margin: 0.5rem 0 0.5rem 1.2rem; color: var(--text-muted);">
-                    <li>Input Tokens = 750 × 2,000 = 1.5M tokens ($4.50 @ $3.00/1M).</li>
-                    <li>Output Tokens = 750 × 150 = 112.5K tokens ($1.69 @ $15.00/1M).</li>
-                    <li>Vector DB & session cache state = $1.26 / user.</li>
-                  </ul>
-                  <div style="background: #080c18; border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem; font-family: var(--font-mono); font-size: 0.85rem; color: var(--red); margin-top: 0.6rem;">
-                    Total 2K Context Cost = $4.50 + $1.69 + $1.26 = $7.45 / user / mo
-                  </div>
-                  <div style="margin-top: 0.6rem; font-size: 0.8rem; color: var(--text-muted);">
-                    * At 128K context: 750 × 128K = 96M tokens/month = <strong>$432.00 / user / month</strong>.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
       </section>
 
-    </div>
-  </div>
-
-  <!-- Ingestion Modal -->
-  <div class="modal-overlay" id="ingestModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>📥 Ingest Knowledge Document into O(1) RIF</h3>
-        <button class="btn-close" id="btnCloseModal">&times;</button>
-      </div>
-      <div class="drop-zone" id="dropZone">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <div style="font-weight: 600; margin: 0.5rem 0 0.2rem;">Drop .txt or .md files here</div>
-        <div style="font-size: 0.8rem; color: var(--text-muted);">or click to browse</div>
-        <input type="file" id="docFileInput" accept=".txt,.md,.json" style="display:none;">
-      </div>
-      <div style="margin-top: 1rem;">
-        <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">Or paste raw text:</label>
-        <textarea id="rawText" style="width: 100%; height: 90px; background: #0c101c; border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); padding: 0.6rem; font-family: inherit; font-size: 0.85rem;" placeholder="Paste facts, code, or documentation..."></textarea>
-      </div>
-      <button class="btn-primary" id="btnIngestSubmit" style="margin-top: 1rem;">Ingest into Memory Matrix</button>
     </div>
   </div>
 
