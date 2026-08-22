@@ -249,16 +249,18 @@ class KalpanaDynamicCache:
     def __init__(
         self,
         num_layers: Optional[int] = None,
-        bands: int = 4096,
+        bands: int = 2048,
         kappa: float = 1.0,
+        sliding_window: int = 128,
         **kwargs,
     ):
         self.bands = bands
         self.kappa = kappa
+        self.sliding_window = sliding_window
         self.num_layers = num_layers or 32
-        # Per-layer RIF cache instances
-        self.layers: List[KalpanaCacheLayer] = [
-            KalpanaCacheLayer(bands=bands, kappa=kappa) for _ in range(self.num_layers)
+        # Per-layer RIF cache instances with hybrid local window + long-range RIF field
+        self.layers: List[KalpanaHybridCacheLayer] = [
+            KalpanaHybridCacheLayer(sliding_window=sliding_window, bands=bands, kappa=kappa) for _ in range(self.num_layers)
         ]
         # key_cache / value_cache mirrors for transformers internals
         self.key_cache: List[torch.Tensor] = []
